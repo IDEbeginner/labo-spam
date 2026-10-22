@@ -140,6 +140,23 @@ var EL = 'FWENSL';
 var ELN = { F: 'Feu', W: 'Eau', E: 'Terre', N: 'Nature', S: 'Ombre', L: 'Lumière' };
 var T = 20;
 var DEATH_TURNS = [5, 8, 11, 14];
+/* Tox achetables (valeur, prix) par rareté — metabot + patch 1.26 */
+var TOX = {
+  mult: { n: 'Multiplicateur', tgt: 'card', r: { R: [2, 100] }, d: 'double les bonus d\u2019élément de la carte' },
+  coeur: { n: 'Cœur', tgt: 'elem', r: { C: [1, 15], R: [2, 30], E: [5, 60], L: [8, 120] }, d: '+X par tour dans un élément, pour toute l\u2019équipe' },
+  berserk: { n: 'Berserk', tgt: 'team', r: { C: [12, 30], R: [25, 60], E: [50, 100], L: [100, 180] }, d: '+X % dégâts et soins de toute l\u2019équipe' },
+  aoe: { n: 'AoE', tgt: 'card', r: { C: [20, 45], R: [40, 90], E: [80, 135], L: [100, 180] }, d: 'les attaques à une cible touchent aussi les voisines à X %' },
+  erosion: { n: 'Érosion', tgt: 'card', r: { C: [50, 15], E: [100, 75] }, d: 'retire des PV max à la cible' },
+  vamp: { n: 'Vampirisme', tgt: 'card', r: { C: [25, 30], R: [50, 70], E: [75, 110], L: [100, 160] }, d: 'soigne la carte de X % des dégâts infligés' },
+  soin: { n: 'Soin ancestral', tgt: 'card', r: { C: [4, 20], R: [9, 40], E: [14, 60], L: [19, 120] }, d: 'soigne X % des PV max par tour' },
+  vital: { n: 'Cœur vital', tgt: 'card', r: { C: [15, 10], R: [30, 30], E: [60, 70], L: [100, 150] }, d: '+X PV max par tour' },
+  phenix: { n: 'Phénix', tgt: 'card', r: { C: [25, 100], R: [50, 150], E: [75, 200], L: [100, 250] }, d: 'revient une fois à X % des PV' },
+  gel: { n: 'Gel', tgt: 'card', r: { E: [60, 150] }, d: 'chaque coup gèle la cible' },
+  provoc: { n: 'Provocation', tgt: 'card', r: { R: [0, 70] }, d: 'attire les coups adverses' },
+  cimetiere: { n: 'Cimetière', tgt: 'team', r: { C: [3, 20], R: [5, 40], E: [8, 60], L: [12, 80] }, d: '+X à tous les bonus à chaque mort' },
+  coeurres: { n: 'Cœur résistance', tgt: 'team', r: { C: [3, 10], R: [6, 30], E: [10, 70], L: [15, 120] }, d: '+X % de résistance par tour à l\u2019équipe' }
+};
+var RAR_N = { C: 'Commune', R: 'Rare', E: 'Épique', L: 'Légendaire' };
 function deathsBy(t) { var n = 0; for (var i = 0; i < DEATH_TURNS.length; i++) if (DEATH_TURNS[i] <= t) n++; return n; }
 function eix(e) { return EL.indexOf(e); }
 
@@ -165,7 +182,8 @@ function cardSeries(card, ti, C) {
   var S = {
     genTeam: z(), genOwn: z(), coef: z(), hAll: z(), hSingle: z(), hSelf: z(),
     critAcc: new Float64Array(T), baseAcc: new Float64Array(T), kcrit: new Float64Array(T),
-    inst: new Float64Array(T), maxhp: new Float64Array(T), flat: new Float64Array(T), freeze: 0, nzE: []
+    inst: new Float64Array(T), maxhp: new Float64Array(T), flat: new Float64Array(T), freeze: 0, nzE: [],
+    freezePot: 0, singleW: 0, allW: 0
   };
   var hearts = Object.assign({}, card.hearts || {});
   var mh = m.hearts || {};
@@ -227,6 +245,8 @@ function cardSeries(card, ti, C) {
         S.inst[k2] += mult;
       }
       if (ab.freeze || card.freeze_tox) S.freeze += rate * acc * (tgt === 'aoe' ? 1 : hits / 4);
+      S.freezePot += rate * acc * (tgt === 'aoe' ? 1 : hits / 4);
+      if (tgt !== 'aoe' && !ab.flat) S.singleW += sum * mult; S.allW += sum * mult;
     }
     if (ab.heal && Object.keys(ab.heal).length) {
       var critfH = 1 + cc0 * (cm - 1);
@@ -360,13 +380,56 @@ function simDetail(cards, Ss, multK, C, curve, wantLog) {
       if (Ss[i].graveyard) for (var e = 0; e < 6; e++) pool[e] += Ss[i].graveyard;
       if (Ss[i].soulvit) { maxhp[i] += Ss[i].soulvit; hp[i] += Ss[i].soulvit; }
     }
+    if (tGy) for (var e9 = 0; e9 < 6; e9++) pool[e9] += tGy;
   };
   var hs = C.healScale;
+  // plan de jeu: achats de boutique choisis par le joueur + carte principale
+  var plan = C.plan || null, buys = plan && plan.buys && plan.buys.length ? plan.buys.map(function (x) { return Object.assign({ done: false }, x); }) : null;
+  var mainCard = plan && plan.main != null ? plan.main : null;
+  var pMult = [], pSplash = [], pEros = [], pVamp = [], pSoin = [], pVital = [], pPhx = [], pPhxUsed = [], pGel = [], pTaunt = [], pSlots = [];
+  for (var q0 = 0; q0 < n; q0++) { pMult.push(false); pSplash.push(0); pEros.push(0); pVamp.push(0); pSoin.push(0); pVital.push(0); pPhx.push(0); pPhxUsed.push(false); pGel.push(false); pTaunt.push(0); pSlots.push(0); }
+  var tBers = 0, tGy = 0, tResRate = 0, heartRate = [0, 0, 0, 0, 0, 0], buyLog = [];
+  var availTurn = function (r) { return r === 'C' ? 1 : r === 'R' ? C.multFrom : r === 'E' ? (C.epicFrom || 6) : (C.legFrom || 8); };
+  var applyBuy = function (x, val) {
+    var tg = x.target;
+    if (x.tox === 'coeur') heartRate[eix(x.elem || 'F')] += val;
+    else if (x.tox === 'berserk') tBers += val / 100;
+    else if (x.tox === 'cimetiere') tGy += val;
+    else if (x.tox === 'coeurres') tResRate += val / 100;
+    else if (tg != null) {
+      pSlots[tg]++;
+      if (x.tox === 'mult') pMult[tg] = true;
+      else if (x.tox === 'aoe') pSplash[tg] = Math.max(pSplash[tg], val / 100);
+      else if (x.tox === 'erosion') pEros[tg] = Math.max(pEros[tg], val / 200);
+      else if (x.tox === 'vamp') pVamp[tg] = Math.max(pVamp[tg], val / 100);
+      else if (x.tox === 'soin') pSoin[tg] += val / 100;
+      else if (x.tox === 'vital') pVital[tg] += val;
+      else if (x.tox === 'phenix') pPhx[tg] = Math.max(pPhx[tg], val / 100);
+      else if (x.tox === 'gel') pGel[tg] = true;
+      else if (x.tox === 'provoc') pTaunt[tg] = 0.5;
+    }
+  };
   for (var k = 0; k < T + 5; k++) {
     var t = k + 1, kk = Math.min(k, T - 1), ev = [];
     var spamNow = 0; for (var a = 0; a < n; a++) if (alive[a]) spamNow += Ss[a].spam;
     bank += spamNow;
-    if (multK != null && !multOn && t >= C.multFrom && bank >= C.multCost && alive[multK]) {
+    if (buys) {
+      for (var bi = 0; bi < buys.length; bi++) {
+        var x = buys[bi]; if (x.done) continue;
+        var spec = TOX[x.tox] && TOX[x.tox].r[x.rar]; if (!spec) { x.done = true; continue; }
+        var cardT = TOX[x.tox].tgt === 'card';
+        if (cardT && (x.target == null || !alive[x.target] || pSlots[x.target] >= 3)) { if (!x.repeat) x.done = true; continue; }
+        if (t < availTurn(x.rar) || bank < spec[1]) { if (!x.repeat) break; else continue; }
+        bank -= spec[1]; applyBuy(x, spec[0]);
+        var lbl = TOX[x.tox].n + ' ' + RAR_N[x.rar].toLowerCase() + (x.tox === 'coeur' ? ' ' + ELN[x.elem || 'F'] : '') + (cardT ? ' sur ' + cards[x.target].name : '');
+        ev.push('Achat : ' + lbl); buyLog.push(t);
+        if (x.tox === 'mult' && multTurn == null) multTurn = t;
+        if (!x.repeat) x.done = true;
+      }
+      for (var he = 0; he < 6; he++) pool[he] += heartRate[he];
+      if (tResRate) for (var rr = 0; rr < n; rr++) res[rr] = Math.min(0.75, res[rr] + tResRate);
+      for (var vv = 0; vv < n; vv++) if (alive[vv] && pVital[vv]) { maxhp[vv] += pVital[vv]; hp[vv] += pVital[vv]; }
+    } else if (multK != null && !multOn && t >= C.multFrom && bank >= C.multCost && alive[multK]) {
       bank -= C.multCost; multOn = true; multTurn = t; ev.push('Multiplicateur acheté (' + cards[multK].name + ')');
     } else if ((multK == null || multOn || !alive[multK]) && t >= C.heartFrom && bank >= C.heartCost && nh < C.hearts) {
       bank -= C.heartCost; nh++; ev.push('Coeur ' + ELN[EL[main]] + ' acheté');
@@ -389,25 +452,26 @@ function simDetail(cards, Ss, multK, C, curve, wantLog) {
     for (var a2 = 0; a2 < n; a2++) if (alive[a2]) { critT += Ss[a2].critAcc[kk]; baseT += Ss[a2].baseAcc[kk]; }
     for (var j5 = 0; j5 < n; j5++) {
       if (!alive[j5]) continue;
-      var s = Ss[j5], mf = (s.nativeMult || (multOn && j5 === multK)) ? 2 : 1;
+      var s = Ss[j5], mf = (s.nativeMult || (multOn && j5 === multK) || pMult[j5]) ? 2 : 1;
       var d = critT * s.kcrit[kk] + baseT * s.inst[kk] + s.flat[kk], hA = 0, hSi = 0, hSe = 0;
       for (var e3 = 0; e3 < 6; e3++) {
         var id2 = e3 * T + kk, sc = 1 + pt * effPool(j5, e3) * mf, hsc = 1 + (sc - 1) * hs;
         d += s.coef[id2] * sc;
         hA += s.hAll[id2] * hsc; hSi += s.hSingle[id2] * hsc; hSe += s.hSelf[id2] * hsc;
       }
-      dmgC[j5] = d; healAll += hA; healSingle += hSi; healSelf[j5] += hSe + s.healPct * maxhp[j5];
+      if (pSplash[j5] || pEros[j5]) d *= (1 + pSplash[j5] * 1.2 * (s.allW > 0 ? s.singleW / s.allW : 0)) * (1 + pEros[j5]);
+      dmgC[j5] = d; healAll += hA; healSingle += hSi; healSelf[j5] += hSe + s.healPct * maxhp[j5] + pSoin[j5] * maxhp[j5] + pVamp[j5] * d;
     }
     var bs = 0, bmx = 0; for (var a3 = 0; a3 < n; a3++) if (alive[a3]) { bs += Ss[a3].berserk; if (Ss[a3].berserk > bmx) bmx = Ss[a3].berserk; }
-    var b = 1 + (C.berserkStack ? bs : bmx);
+    var b = 1 + (C.berserkStack ? bs : bmx) + tBers;
     var total = 0; for (var j6 = 0; j6 < n; j6++) total += dmgC[j6];
     total *= b;
-    var frzRawD = 0; for (var jf2 = 0; jf2 < n; jf2++) if (alive[jf2]) frzRawD += Ss[jf2].freeze;
+    var frzRawD = 0; for (var jf2 = 0; jf2 < n; jf2++) if (alive[jf2]) frzRawD += pGel[jf2] ? Math.max(Ss[jf2].freeze, Ss[jf2].freezePot) : Ss[jf2].freeze;
     if (t > 1 && C.freezeF > 0) total += (C.shatter || 0) * Math.min(4, 4 * frzRawD);
     for (var j7 = 0; j7 < n; j7++) if (alive[j7] && Ss[j7].instakill && (t - 1) % Ss[j7].instakill === 0) { total += 800; ev.push(cards[j7].name + ' absorbe une carte'); }
     var remBefore = rem; rem -= total;
     while (enemyDeaths < 3 && rem <= EHP * (3 - enemyDeaths) / 4) { enemyDeaths++; ev.push('Une carte adverse tombe'); addDeathBonus(); }
-    var frzNow = 0; for (var a4 = 0; a4 < n; a4++) if (alive[a4]) frzNow += Ss[a4].freeze;
+    var frzNow = 0; for (var a4 = 0; a4 < n; a4++) if (alive[a4]) frzNow += pGel[a4] ? Math.max(Ss[a4].freeze, Ss[a4].freezePot) : Ss[a4].freeze;
     frzNow = Math.min(0.6, frzNow * C.freezeF);
     var entry = { t: t, dmg: total, heal: 0, rem: Math.max(0, rem), frz: frzNow, pool: [], hp: [], alive: [], ev: ev };
     for (var e5 = 0; e5 < 6; e5++) entry.pool.push(pool[e5] + (e5 === main ? heartPool : 0));
@@ -423,6 +487,7 @@ function simDetail(cards, Ss, multK, C, curve, wantLog) {
     }
     if (healSingle > 0) {
       var w = -1, wr = 9; for (var j9 = 0; j9 < n; j9++) if (alive[j9] && hp[j9] / maxhp[j9] < wr) { wr = hp[j9] / maxhp[j9]; w = j9; }
+      if (mainCard != null && alive[mainCard] && hp[mainCard] < maxhp[mainCard]) w = mainCard;
       if (w >= 0) { var bf = hp[w]; hp[w] = Math.min(maxhp[w], hp[w] + healSingle * b); healed += hp[w] - bf; }
     }
     entry.heal = healed;
@@ -439,10 +504,11 @@ function simDetail(cards, Ss, multK, C, curve, wantLog) {
     // tour adverse
     var efrac = Math.sqrt(Math.max(0.25, rem / EHP));
     var inc = curve[Math.min(t, T) - 1] * C.enemyF / 100 * efrac * (1 - frzNow);
-    var tu = 0; for (var j13 = 0; j13 < n; j13++) if (alive[j13]) tu += Ss[j13].taunt;
+    var tauntOf = function (j) { return Ss[j].taunt + pTaunt[j]; };
+    var tu = 0; for (var j13 = 0; j13 < n; j13++) if (alive[j13]) tu += tauntOf(j13);
     var tshare = Math.min(1, tu);
     var split = new Float64Array(n);
-    if (tshare > 0) for (var j14 = 0; j14 < n; j14++) if (alive[j14]) split[j14] += inc * tshare * Ss[j14].taunt / tu;
+    if (tshare > 0) for (var j14 = 0; j14 < n; j14++) if (alive[j14]) split[j14] += inc * tshare * tauntOf(j14) / tu;
     var target = -1, tv = -1;
     for (var j15 = 0; j15 < n; j15++) if (alive[j15] && dmgC[j15] + 1e-3 * hp[j15] > tv) { tv = dmgC[j15] + 1e-3 * hp[j15]; target = j15; }
     split[target] += inc * (1 - tshare);
@@ -452,7 +518,8 @@ function simDetail(cards, Ss, multK, C, curve, wantLog) {
     for (var oi = 0; oi < order.length; oi++) {
       var jj = order[oi]; if (!alive[jj]) continue;
       var dj = (split[jj] + overflow) * (1 - res[jj]); overflow = 0;
-      if (dj >= hp[jj]) {
+      if (dj >= hp[jj] && pPhx[jj] && !pPhxUsed[jj]) { pPhxUsed[jj] = true; hp[jj] = maxhp[jj] * pPhx[jj]; ev.push(cards[jj].name + ' revient (Phénix)'); }
+      else if (dj >= hp[jj]) {
         overflow = (dj - hp[jj]) / (1 - res[jj]); hp[jj] = 0; alive[jj] = false;
         ev.push(cards[jj].name + ' meurt');
         addDeathBonus();
@@ -466,7 +533,7 @@ function simDetail(cards, Ss, multK, C, curve, wantLog) {
   var score;
   if (tkill != null) { var fr = 0; for (var j17 = 0; j17 < n; j17++) if (alive[j17]) fr += hp[j17] / maxhp[j17]; score = 1 + fr / 4 - 0.02 * tkill; }
   else score = 1 - Math.max(0, rem) / EHP;
-  var out = { score: score, tkill: tkill, tdie: tdie, multTurn: multTurn, hearts: nh, main: EL[main] };
+  var out = { score: score, tkill: tkill, tdie: tdie, multTurn: multTurn, hearts: nh, main: EL[main], planned: !!buys, buys: buyLog.length };
   if (wantLog) { out.log = log; out.maxhp = maxhp; }
   return out;
 }
@@ -532,13 +599,14 @@ function getSeries(card, ti, C) {
 }
 
 /* Test complet d'un deck dans tous les scénarios pertinents */
-function testDeck(cards, tals, multK, R, curve, cap, wantLog) {
+function testDeck(cards, tals, multK, R, curve, cap, wantLog, plan) {
   var C0 = concreteRules(R, {});
   var Ss0 = cards.map(function (c, i) { return getSeries(c, tals[i], C0); });
   var unk = relevantUnknowns(R, cards, Ss0);
   var scen = scenarioList(unk, cap || 64);
   var results = scen.map(function (a) {
     var C = concreteRules(R, a);
+    if (plan) C.plan = plan;
     var Ss = cards.map(function (c, i) { return getSeries(c, tals[i], C); });
     var r = simDetail(cards, Ss, multK, C, curve, wantLog);
     r.assign = a;
@@ -834,7 +902,7 @@ var S = {
   answers: clone(DEFAULT_ANSWERS), numbers: {}, ruleNotes: {}, ruleDates: {},
   overrides: {}, infos: [], decks: [], curve: BASE.curve.slice(), curveAt: null, lastSearch: null,
   tab: 'tester',
-  tester: { slots: [], mult: null, scen: 0 },
+  tester: { slots: [], mult: null, scen: 0, plan: '', cfg: { main: null, buys: [] } },
   search: { running: false, phase: '', done: 0, total: 0, results: null, opts: { ownedOnly: true, must: [], recalibrate: true, minEnergy: 3 } },
   cardSel: null, cardFilter: { q: '', el: '', mode: 'owned' }, draft: null
 };
@@ -957,11 +1025,11 @@ var DEFAULT_DECK = [['princesse-meridia'], ['frost-glacier'], ['lame-de-la-foret
 function initTester() {
   if (S.tester.slots.length) return;
   var saved = null; try { saved = JSON.parse(localStorage.getItem(LS_KEY + '-deck') || 'null'); } catch (e) {}
-  if (saved && saved.slots && saved.slots.length === 4) { S.tester.slots = saved.slots; S.tester.mult = saved.mult; return; }
+  if (saved && saved.slots && saved.slots.length === 4) { S.tester.slots = saved.slots; S.tester.mult = saved.mult; S.tester.plan = saved.plan || ''; S.tester.cfg = saved.cfg || { main: null, buys: [] }; return; }
   S.tester.slots = DEFAULT_DECK.map(function (x) { var c = cardById(x[0]); return { id: x[0], ti: c ? c.pref || 0 : 0 }; });
   S.tester.mult = 2;
 }
-function persistDeckLocal() { try { localStorage.setItem(LS_KEY + '-deck', JSON.stringify({ slots: S.tester.slots, mult: S.tester.mult })); } catch (e) {} }
+function persistDeckLocal() { try { localStorage.setItem(LS_KEY + '-deck', JSON.stringify({ slots: S.tester.slots, mult: S.tester.mult, plan: S.tester.plan, cfg: S.tester.cfg })); } catch (e) {} }
 var lastTest = null;
 function runTest() {
   var cs = S.tester.slots.map(function (s) { return cardById(s.id); });
@@ -969,7 +1037,9 @@ function runTest() {
   var ids = cs.map(function (c) { return c.id; });
   if (new Set(ids).size < 4) { lastTest = { error: 'Le deck contient deux fois la même carte.' }; return; }
   var tals = S.tester.slots.map(function (s) { return s.ti; });
-  lastTest = testDeck(cs, tals, S.tester.mult, rulesObj(), S.curve, 64, true);
+  var cfg = S.tester.cfg || {};
+  var planArg = (cfg.buys && cfg.buys.length) || cfg.main != null ? cfg : null;
+  lastTest = testDeck(cs, tals, S.tester.mult, rulesObj(), S.curve, 64, true, planArg);
   lastTest.cards = cs;
   if (S.tester.scen >= lastTest.results.length) S.tester.scen = 0;
 }
@@ -991,6 +1061,7 @@ function renderTester(keepScroll) {
   var decksHtml = S.decks.length ? S.decks.map(function (d) {
     var names = (d.ids || []).map(function (id) { var c = cardById(id); return c ? cardChip(c) : '<span class="chip">' + esc(id) + '</span>'; }).join(' ');
     return '<div class="stack" style="gap:6px;padding:8px 0;border-bottom:1px solid var(--line)"><div class="row"><b>' + esc(d.name || 'Deck') + '</b><span class="muted small">' + esc((d.at || '').slice(0, 10)) + '</span></div><div class="row">' + names + '</div>' +
+      (d.plan ? '<div class="small muted" style="white-space:pre-line">' + esc(d.plan.length > 160 ? d.plan.slice(0, 160) + '…' : d.plan) + '</div>' : '') +
       '<div class="row"><button class="btn" data-loaddeck="' + esc(d.id) + '">Charger</button><button class="btn ghost danger" data-deldeck="' + esc(d.id) + '">Supprimer</button></div></div>';
   }).join('') : '<p class="muted small">Aucun deck enregistré. Donne un nom à ton deck et enregistre-le pour le retrouver ici.</p>';
   var p = $('#panel-tester');
@@ -1000,6 +1071,11 @@ function renderTester(keepScroll) {
       '<div class="box stack"><h2>Ton deck</h2>' + slotsHtml +
       '<label class="mult"><input type="radio" name="mult" id="mult-none" value="none"' + (S.tester.mult == null ? ' checked' : '') + '> Pas de Multiplicateur</label>' +
       '<div class="row"><input type="text" id="deckname" placeholder="Nom du deck" style="flex:1"><button class="btn" id="savedeck">Enregistrer</button></div></div>' +
+      '<div class="box stack"><h2>Plan de jeu</h2><p class="small muted" style="margin:0">Comment ce deck gagne : la carte à protéger, l\u2019ordre des sorts, quoi acheter en boutique, les pièges à éviter. Il est enregistré avec le deck.</p>' +
+      planCfgHtml() +
+      '<textarea id="plan" style="min-height:150px" placeholder="Ex. : Tours 1-3, Scorch empile Terre et Eau pendant que Gerz encaisse. Multiplicateur sur l\u2019Amphibien dès le tour 4. Ne jamais laisser Scorch sans protection.">' + esc(S.tester.plan || '') + '</textarea>' +
+      (typeof SAMPLE !== 'undefined' && SAMPLE && !SAMPLE_OFF ? '<div class="row"><button class="btn" id="planai">Proposer un plan avec Claude</button><button class="btn ghost" id="planstop" hidden>Arrêter</button><span class="small muted" id="planstatus"></span></div>' : '') +
+      '</div>' +
       '<div class="box"><h3>Decks enregistrés</h3>' + decksHtml + '</div>' +
     '</div>' +
     '<div class="stack" id="testres">' + testResultsHtml() + '</div>' +
@@ -1084,12 +1160,98 @@ $('#panel-tester').addEventListener('change', function (e) {
     S.tester.mult = t.value === 'none' ? null : +t.value; persistDeckLocal(); renderTester(true);
   }
 });
+function planCfgHtml() {
+  var cfg = S.tester.cfg || (S.tester.cfg = { main: null, buys: [] });
+  var cs = S.tester.slots.map(function (sl) { return cardById(sl.id); });
+  var mainSel = '<label class="f"><span>Carte principale (reçoit en priorité les soins à une cible)</span><select id="pl-main"><option value="">Aucune</option>' +
+    cs.map(function (c, i) { return '<option value="' + i + '"' + (cfg.main === i ? ' selected' : '') + '>' + esc(c ? c.name : '?') + '</option>'; }).join('') + '</select></label>';
+  var rows = cfg.buys.map(function (x, i) {
+    var spec = TOX[x.tox] || TOX.mult;
+    var toxSel = '<select data-b="' + i + '" data-k="tox" id="pl-tox-' + i + '">' + Object.keys(TOX).map(function (k) { return '<option value="' + k + '"' + (k === x.tox ? ' selected' : '') + '>' + esc(TOX[k].n) + '</option>'; }).join('') + '</select>';
+    var rarSel = '<select data-b="' + i + '" data-k="rar" id="pl-rar-' + i + '">' + Object.keys(spec.r).map(function (r) { return '<option value="' + r + '"' + (r === x.rar ? ' selected' : '') + '>' + RAR_N[r] + ' · ' + spec.r[r][1] + ' Sp</option>'; }).join('') + '</select>';
+    var tgSel = spec.tgt === 'card' ? '<select data-b="' + i + '" data-k="target" id="pl-tg-' + i + '">' + cs.map(function (c, j) { return '<option value="' + j + '"' + (x.target === j ? ' selected' : '') + '>' + esc(c ? c.name : '?') + '</option>'; }).join('') + '</select>'
+      : spec.tgt === 'elem' ? '<select data-b="' + i + '" data-k="elem" id="pl-el-' + i + '">' + EL.split('').map(function (e) { return '<option value="' + e + '"' + (x.elem === e ? ' selected' : '') + '>' + ELN[e] + '</option>'; }).join('') + '</select>'
+      : '<span class="small muted">Toute l\u2019équipe</span>';
+    return '<div class="stack" style="gap:6px;padding:8px;border:1px solid var(--line);border-radius:8px"><div class="row"><b class="small">' + (i + 1) + '.</b>' + toxSel + rarSel + '</div><div class="row">' + tgSel +
+      '<label class="mult"><input type="checkbox" data-b="' + i + '" data-k="repeat" id="pl-rep-' + i + '"' + (x.repeat ? ' checked' : '') + '> À chaque tour</label>' +
+      '<button class="btn ghost danger small" data-delbuy="' + i + '">Retirer</button></div><div class="small muted">' + esc(spec.d) + '</div></div>';
+  }).join('');
+  return '<div class="stack" style="gap:8px">' + mainSel + '<div class="small muted" style="font-weight:600">Achats en boutique, dans l\u2019ordre</div>' +
+    (rows || '<p class="small muted" style="margin:0">Aucun achat prévu : le simulateur achète le Multiplicateur (carte cochée plus haut) puis des Cœurs.</p>') +
+    '<div class="row"><button class="btn" id="addbuy">Ajouter un achat</button>' + (typeof SAMPLE !== 'undefined' && SAMPLE && !SAMPLE_OFF ? '<button class="btn ghost" id="planparse">Régler d\u2019après mon plan écrit</button>' : '') + '</div>' +
+    '<p class="small muted" style="margin:0">« À chaque tour » rachète ce Tox dès que tu as assez de Spamton, par exemple un Cœur ou un boost sur ta carte principale. Les Tox sur une carte sont limités à 3 emplacements.</p></div>';
+}
+var planTimer = null, planCtl = null;
+$('#panel-tester').addEventListener('change', function (e) {
+  var t = e.target, cfg = S.tester.cfg;
+  if (t.id === 'pl-main') { cfg.main = t.value === '' ? null : +t.value; persistDeckLocal(); renderTester(true); return; }
+  if (t.dataset.b != null) {
+    var x = cfg.buys[+t.dataset.b], k = t.dataset.k;
+    if (k === 'tox') { x.tox = t.value; var rs = Object.keys(TOX[x.tox].r); if (rs.indexOf(x.rar) < 0) x.rar = rs[rs.length > 2 ? 2 : 0]; if (TOX[x.tox].tgt === 'card' && x.target == null) x.target = cfg.main != null ? cfg.main : 0; if (TOX[x.tox].tgt === 'elem' && !x.elem) x.elem = 'F'; }
+    else if (k === 'rar') x.rar = t.value; else if (k === 'target') x.target = +t.value; else if (k === 'elem') x.elem = t.value; else if (k === 'repeat') x.repeat = t.checked;
+    persistDeckLocal(); renderTester(true);
+  }
+});
+$('#panel-tester').addEventListener('input', function (e) {
+  if (e.target.id === 'plan') { S.tester.plan = e.target.value; clearTimeout(planTimer); planTimer = setTimeout(persistDeckLocal, 500); }
+});
+function planPrompt() {
+  var cs = S.tester.slots.map(function (sl) { return cardById(sl.id); });
+  var desc = cs.map(function (c, i) {
+    var ab = (c.abil || []).map(function (a) {
+      var parts = [];
+      if (a.dmg && Object.keys(a.dmg).length) parts.push('dégâts ' + Object.keys(a.dmg).map(function (e) { return a.dmg[e] + ' ' + ELN[e]; }).join(' + ') + (a.tgt === 'aoe' ? ' sur toutes les cartes adverses' : ''));
+      if (a.gen && Object.keys(a.gen).length) parts.push('bonus ' + Object.keys(a.gen).map(function (e) { return '+' + a.gen[e] + ' ' + ELN[e]; }).join(', '));
+      if (a.heal && Object.keys(a.heal).length) parts.push('soin ' + Object.keys(a.heal).map(function (e) { return a.heal[e] + ' ' + ELN[e]; }).join(' + ') + (a.heal_tgt === 'all' ? ' sur toutes tes cartes' : a.heal_tgt === 'self' ? ' sur elle-même' : ''));
+      if (a.freeze) parts.push('gèle');
+      return (a.n || 'Capacité') + ' (recharge ' + a.cd + ') : ' + (parts.join(' ; ') || 'effet utilitaire');
+    }).join(' | ');
+    return '- ' + c.name + ' (' + ELN[c.el] + ', ' + c.hp + ' PV, ' + c.spam + ' Spamton/tour, talent ' + talentName(c, S.tester.slots[i].ti) + (S.tester.mult === i ? ', porte le Multiplicateur' : '') + ') : ' + ab + (c.notes ? ' — notes : ' + c.notes : '');
+  }).join('\n');
+  var C0 = concreteRules(rulesObj(), {});
+  var ci = carryInfo(cs.map(function (c, i) { return getSeries(c, S.tester.slots[i].ti, C0); }), C0);
+  var verdict = lastTest && !lastTest.error ? ('Simulation : ' + lastTest.wins + '/' + lastTest.total + ' scénarios gagnés, score ' + lastTest.avg.toFixed(2) + '.') : '';
+  var rules = RULES.filter(function (r) { return S.answers[r.id] !== '?'; }).map(function (r) { return r.q + ' ' + (S.answers[r.id] === true ? 'Oui' : S.answers[r.id] === false ? 'Non' : 'En partie'); }).join(' ; ');
+  return 'Tu es un joueur expert du jeu de cartes SPAM (Ticroco). Écris le plan de jeu de ce deck de 4 cartes pour son joueur, en français familier et direct, sans introduction.\n\n' +
+    'Rappels de règles : chaque point de bonus d\u2019élément augmente de ' + S.numbers.pt + ' % les capacités de cet élément jusqu\u2019à la fin de la partie. La boutique de Tox vend notamment le Multiplicateur (double les bonus pour une carte, ' + S.numbers.multCost + ' Spamton, dès le tour ' + S.numbers.multFrom + ') et des Cœurs (+bonus par tour dans un élément).' + (rules ? ' Règles confirmées par le joueur : ' + rules + '.' : '') +
+    '\n\nDECK :\n' + desc + '\n\nCarry estimé : ' + cs[ci.carry].name + ', qui reçoit +' + ci.energy.toFixed(1) + ' bonus par tour du deck. ' + verdict +
+    '\n\nFormat : 6 à 9 lignes courtes, chacune commençant par un intitulé suivi de deux-points : Rôles (une phrase par carte), Tours 1 à 3, Milieu de partie, Carte à protéger, Boutique, Talents, Contre quoi ce deck galère, Piège à éviter. Pas de markdown, pas de gras, pas de liste à puces.';
+}
 $('#panel-tester').addEventListener('click', function (e) {
   var b = e.target.closest('button'); if (!b) return;
+  if (b.id === 'planai') {
+    var ta = $('#plan'), st = $('#planstatus'), stop = $('#planstop');
+    planCtl = new AbortController(); b.disabled = true; stop.hidden = false; st.textContent = 'Claude réfléchit…';
+    SAMPLE(planPrompt(), { signal: planCtl.signal, cache: false, onText: function (u) { ta.value = u.text; S.tester.plan = u.text; st.textContent = 'Claude écrit…'; } })
+      .then(function (r) { ta.value = r.text; S.tester.plan = r.text; persistDeckLocal(); st.textContent = 'Plan proposé. Modifie-le à ta guise, puis enregistre le deck.'; })
+      .catch(function (er) { if (er && er.text) { ta.value = er.text; S.tester.plan = er.text; } st.textContent = er && er.code === 'cancelled' ? 'Arrêté.' : sampleErr(er); })
+      .finally(function () { b.disabled = false; stop.hidden = true; });
+    return;
+  }
+  if (b.id === 'planstop') { if (planCtl) planCtl.abort(); return; }
+  if (b.id === 'addbuy') { var c0 = S.tester.cfg; c0.buys.push({ tox: c0.buys.length ? 'coeur' : 'mult', rar: c0.buys.length ? 'E' : 'R', target: c0.main != null ? c0.main : (S.tester.mult != null ? S.tester.mult : 0), elem: 'F', repeat: false }); persistDeckLocal(); renderTester(true); return; }
+  if (b.dataset.delbuy != null) { S.tester.cfg.buys.splice(+b.dataset.delbuy, 1); persistDeckLocal(); renderTester(true); return; }
+  if (b.id === 'planparse') {
+    var txt = (S.tester.plan || '').trim(); if (!txt) { toast('Écris d\u2019abord ton plan'); return; }
+    var cs2 = S.tester.slots.map(function (sl) { return cardById(sl.id); });
+    var pr = 'Traduis ce plan de jeu SPAM en réglages pour un simulateur. Deck (index : carte) : ' + cs2.map(function (c, i) { return i + ' : ' + c.name + ' (' + ELN[c.el] + ')'; }).join(', ') +
+      '.\nTox achetables (id : nom : raretés disponibles : effet) :\n' + Object.keys(TOX).map(function (k) { return k + ' : ' + TOX[k].n + ' : ' + Object.keys(TOX[k].r).join('/') + ' : ' + TOX[k].d + (TOX[k].tgt === 'card' ? ' (cible une carte)' : TOX[k].tgt === 'elem' ? ' (choisir un élément F W E N S L)' : ' (équipe)'); }).join('\n') +
+      '\n\nPLAN DU JOUEUR :  + txt + \n\nRéponds uniquement avec un JSON {"main": index de la carte principale ou null, "buys": [{"tox": id, "rar": "C"|"R"|"E"|"L", "target": index de carte ou null, "elem": "F"|"W"|"E"|"N"|"S"|"L" ou null, "repeat": true si le joueur l\u2019achète à chaque tour}]} dans l\u2019ordre d\u2019achat. Si le plan ne parle pas de boutique, buys vide. Choisis une rareté disponible pour ce Tox ; par défaut Épique pour Cœur et Berserk, Rare pour Multiplicateur.';
+    b.disabled = true; b.textContent = 'Claude lit ton plan…';
+    SAMPLE.json(pr, { cache: false }).then(function (r) {
+      var cfg = { main: Number.isInteger(r.main) && r.main >= 0 && r.main < 4 ? r.main : null, buys: [] };
+      (r.buys || []).forEach(function (x) {
+        if (!TOX[x.tox]) return; var rar = TOX[x.tox].r[x.rar] ? x.rar : Object.keys(TOX[x.tox].r)[0];
+        cfg.buys.push({ tox: x.tox, rar: rar, target: Number.isInteger(x.target) && x.target >= 0 && x.target < 4 ? x.target : (cfg.main != null ? cfg.main : 0), elem: EL.indexOf(x.elem) >= 0 ? x.elem : 'F', repeat: !!x.repeat });
+      });
+      S.tester.cfg = cfg; persistDeckLocal(); renderTester(true); toast('Réglages du plan mis à jour');
+    }).catch(function (er) { toast(sampleErr(er)); b.disabled = false; b.textContent = 'Régler d\u2019après mon plan écrit'; });
+    return;
+  }
   if (b.dataset.scen != null) { S.tester.scen = +b.dataset.scen; $('#testres').innerHTML = testResultsHtml(); return; }
   if (b.id === 'savedeck') {
     var name = ($('#deckname').value || '').trim() || S.tester.slots.map(function (s) { var c = cardById(s.id); return c ? c.name.split(' ')[0] : s.id; }).join(' + ');
-    var d = { name: name, ids: S.tester.slots.map(function (s) { return s.id; }), talents: S.tester.slots.map(function (s) { return s.ti; }), mult: S.tester.mult, at: new Date().toISOString(),
+    var d = { name: name, ids: S.tester.slots.map(function (s) { return s.id; }), talents: S.tester.slots.map(function (s) { return s.ti; }), mult: S.tester.mult, plan: S.tester.plan || '', cfg: S.tester.cfg || null, at: new Date().toISOString(),
       result: lastTest && !lastTest.error ? { wins: lastTest.wins, total: lastTest.total, avg: Math.round(lastTest.avg * 1000) / 1000 } : null };
     if (DB) DB.collection('decks').add(d).then(function () { toast('Deck enregistré'); }).catch(function (er) { toast('Enregistrement impossible : ' + (er && er.message || er)); });
     else { d.id = 'd' + Date.now(); S.decks.unshift(d); lsSave(); renderTester(true); toast('Deck enregistré sur cet appareil'); }
@@ -1097,7 +1259,7 @@ $('#panel-tester').addEventListener('click', function (e) {
   }
   if (b.dataset.loaddeck) {
     var dk = S.decks.find(function (x) { return x.id === b.dataset.loaddeck; }); if (!dk) return;
-    S.tester.slots = dk.ids.map(function (id, i) { return { id: id, ti: (dk.talents || [])[i] || 0 }; }); S.tester.mult = dk.mult == null ? null : dk.mult; S.tester.scen = 0;
+    S.tester.slots = dk.ids.map(function (id, i) { return { id: id, ti: (dk.talents || [])[i] || 0 }; }); S.tester.mult = dk.mult == null ? null : dk.mult; S.tester.scen = 0; S.tester.plan = dk.plan || ''; S.tester.cfg = dk.cfg || { main: null, buys: [] };
     persistDeckLocal(); renderTester(); toast('Deck chargé'); return;
   }
   if (b.dataset.deldeck) {
@@ -1107,7 +1269,7 @@ $('#panel-tester').addEventListener('click', function (e) {
   }
 });
 function loadDeckIntoTester(ids, tals, mult) {
-  S.tester.slots = ids.map(function (id, i) { return { id: id, ti: tals[i] || 0 }; }); S.tester.mult = mult; S.tester.scen = 0; persistDeckLocal(); showTab('tester'); window.scrollTo(0, 0);
+  S.tester.slots = ids.map(function (id, i) { return { id: id, ti: tals[i] || 0 }; }); S.tester.mult = mult; S.tester.scen = 0; S.tester.plan = ''; S.tester.cfg = { main: null, buys: [] }; persistDeckLocal(); showTab('tester'); window.scrollTo(0, 0);
 }
 
 /* ================= Onglet RECHERCHE ================= */
