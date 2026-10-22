@@ -1,0 +1,1306 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Labo SPAM</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Lilita+One&display=swap">
+<style>
+/* Mise en page: atelier de deck — barre d'onglets, colonne de construction + panneau de résultats; couleurs des 6 éléments comme repères */
+:root {
+  --bg: #f5f2fa; --surface: #ffffff; --surface2: #efe9f7; --line: #ddd4ea; --fg: #221a2e; --muted: #6b5f80;
+  --accent: #6b3fd0; --accent-fg: #ffffff; --good: #1f8a4c; --bad: #c2384b; --warn: #b7791f;
+  --F: #d9531e; --W: #1f7fc4; --E: #9a6a3a; --N: #3f9a2c; --S: #7e48d8; --L: #b8900f;
+  --display: "Lilita One", "Arial Rounded MT Bold", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #16121d; --surface: #201a2a; --surface2: #2a2236; --line: #3a3049; --fg: #ece6f5; --muted: #a698ba;
+  --accent: #b48cff; --accent-fg: #1a1222; --good: #4fd18b; --bad: #ff6b81; --warn: #f0b85a;
+  --F: #ff8a4c; --W: #4fb8ff; --E: #d29a63; --N: #82d35e; --S: #b07cff; --L: #f2d15b; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #16121d; --surface: #201a2a; --surface2: #2a2236; --line: #3a3049; --fg: #ece6f5; --muted: #a698ba;
+  --accent: #b48cff; --accent-fg: #1a1222; --good: #4fd18b; --bad: #ff6b81; --warn: #f0b85a;
+  --F: #ff8a4c; --W: #4fb8ff; --E: #d29a63; --N: #82d35e; --S: #b07cff; --L: #f2d15b; color-scheme: dark }
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 48px }
+h1, h2, h3 { text-wrap: balance; margin: 0 }
+h1 { font-family: var(--display); font-weight: 400; font-size: 2rem; letter-spacing: .01em }
+h2 { font-family: var(--display); font-weight: 400; font-size: 1.35rem }
+h3 { font-size: 1rem; font-weight: 700 }
+button, input, select, textarea { font: inherit; color: inherit }
+button { cursor: pointer }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.wrap { max-width: 1240px; margin: 0 auto }
+header.top { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: flex-end; justify-content: space-between; padding-block: 22px 14px }
+.sub { color: var(--muted); font-size: .9rem }
+.sync { font-size: .8rem; color: var(--muted); display: flex; align-items: center; gap: 6px }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); display: inline-block }
+.dot.on { background: var(--good) }
+nav.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); overflow-x: auto; position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 5 }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+nav.tabs button { background: none; border: 0; padding: 12px 14px; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; white-space: nowrap }
+nav.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent) }
+section.panel { padding-top: 20px }
+.grid2 { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 20px; align-items: start }
+@media (max-width: 860px) { .grid2 { grid-template-columns: minmax(0, 1fr) } }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; min-width: 0 }
+.stack { display: flex; flex-direction: column; gap: 12px }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center }
+.muted { color: var(--muted) }
+.small { font-size: .82rem }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; color: var(--muted); min-width: 0 }
+label.f > span { font-weight: 600 }
+input[type=text], input[type=number], select, textarea { background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; width: 100%; min-width: 0 }
+textarea { min-height: 70px; resize: vertical }
+input[type=number] { font-family: var(--mono); font-size: .88rem }
+.btn { background: var(--surface2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 14px; font-weight: 600 }
+.btn:hover { border-color: var(--accent) }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent) }
+.btn.ghost { background: none }
+.btn.danger { color: var(--bad) }
+.btn[disabled] { opacity: .5; cursor: not-allowed }
+.slot { display: grid; grid-template-columns: 10px minmax(0, 1fr); gap: 10px; padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface2) }
+.slot .stripe { border-radius: 6px }
+.slot .inner { display: flex; flex-direction: column; gap: 6px; min-width: 0 }
+.mult { display: flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--muted) }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 999px; font-size: .78rem; font-weight: 600; background: var(--surface2); border: 1px solid var(--line); white-space: nowrap }
+.el { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex: none }
+.verdict { display: flex; flex-wrap: wrap; gap: 16px; align-items: baseline }
+.big { font-family: var(--display); font-size: 2.2rem; line-height: 1 }
+.good { color: var(--good) } .bad { color: var(--bad) } .warn { color: var(--warn) }
+.scen { display: flex; flex-wrap: wrap; gap: 6px }
+.scen button { border: 1px solid var(--line); background: var(--surface2); border-radius: 8px; padding: 6px 9px; font-size: .78rem; text-align: left; display: flex; flex-direction: column; gap: 2px }
+.scen button[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset }
+.scen b { font-size: .82rem }
+.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px }
+table { border-collapse: collapse; width: 100%; font-size: .84rem; font-variant-numeric: tabular-nums }
+th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top }
+th { background: var(--surface2); font-weight: 700; white-space: nowrap; position: sticky; top: 0 }
+td.num, th.num { text-align: right; font-family: var(--mono) }
+tr:last-child td { border-bottom: 0 }
+.hpbar { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; min-width: 50px }
+.hpbar i { display: block; height: 100% }
+.chart svg { width: 100%; height: auto; display: block }
+.chart text { fill: var(--muted); font-size: 10px; font-family: var(--mono) }
+.pools { display: flex; flex-wrap: wrap; gap: 6px }
+.progress { height: 8px; background: var(--surface2); border-radius: 4px; overflow: hidden }
+.progress i { display: block; height: 100%; background: var(--accent); transition: width .2s }
+.q { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; padding: 14px 0; border-bottom: 1px solid var(--line) }
+.q:last-child { border-bottom: 0 }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap }
+.seg button { border: 0; background: var(--surface2); padding: 7px 11px; font-size: .84rem; font-weight: 600; border-right: 1px solid var(--line) }
+.seg button:last-child { border-right: 0 }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg) }
+@media (max-width: 640px) { .q { grid-template-columns: minmax(0, 1fr) } }
+.cardlist { max-height: 70vh; overflow: auto; display: flex; flex-direction: column }
+.cardlist button { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; align-items: center; text-align: left; padding: 7px 8px; border: 0; border-bottom: 1px solid var(--line); background: none }
+.cardlist button[aria-current="true"] { background: var(--surface2) }
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px }
+.elgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px }
+.elgrid label { font-size: .72rem; color: var(--muted); display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.elgrid input { padding: 5px; font-size: .8rem }
+@media (max-width: 480px) { .elgrid { grid-template-columns: repeat(3, minmax(0, 1fr)) } }
+fieldset { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin: 0; display: flex; flex-direction: column; gap: 10px; min-width: 0 }
+legend { font-weight: 700; padding: 0 6px }
+.note { border-left: 3px solid var(--accent); padding: 8px 12px; background: var(--surface2); border-radius: 0 8px 8px 0; font-size: .88rem }
+.toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); background: var(--fg); color: var(--bg); padding: 10px 14px; border-radius: 8px; font-weight: 600; z-index: 20 }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: .78rem; color: var(--muted) }
+.sw { display: inline-block; width: 12px; height: 3px; vertical-align: middle; margin-right: 4px; border-radius: 2px }
+.tag-unowned { color: var(--warn); font-size: .72rem; font-weight: 700 }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Labo SPAM</h1>
+      <div class="sub" id="subline">Simulateur de decks · tes cartes · patch 1.26</div>
+    </div>
+    <div class="sync" id="sync"><span class="dot"></span><span>Connexion à l'artefact…</span></div>
+  </header>
+  <nav class="tabs" role="tablist" id="tabs">
+    <button role="tab" data-tab="tester" aria-selected="true">Tester un deck</button>
+    <button role="tab" data-tab="search" aria-selected="false">Chercher le meilleur deck</button>
+    <button role="tab" data-tab="cards" aria-selected="false">Cartes</button>
+    <button role="tab" data-tab="rules" aria-selected="false">Règles et infos</button>
+  </nav>
+  <section class="panel" id="panel-tester"></section>
+  <section class="panel" id="panel-search" hidden></section>
+  <section class="panel" id="panel-cards" hidden></section>
+  <section class="panel" id="panel-rules" hidden></section>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script id="data" type="application/json">{"cards":[{"name":"Esprit Feu","hp":500,"res":0.1,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"esprit-feu","owned":true,"abil":[{"cd":1,"dmg":{"F":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"F":1},"heal_tgt":"single","hits":1,"n":"Souffle de feu"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"F":1},"heal_tgt":"single","hits":1,"n":"Flambée"}],"talents":[{"name":"Coeur de feu","mods":{"hearts":{"F":1}}},{"name":"Terrain aquatique","mods":{"start":{"W":7}}},{"name":"Cavalerie","mods":{"cavalry":100}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Esprit Eau","hp":500,"res":0.05,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"esprit-eau","owned":true,"abil":[{"cd":1,"dmg":{"W":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"W":1},"heal_tgt":"single","hits":1,"n":"Souffle d'eau"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"W":1},"heal_tgt":"single","hits":1,"n":"Vague"}],"talents":[{"name":"Coeur d'eau","mods":{"hearts":{"W":1}}},{"name":"Terrain enflammé","mods":{"start":{"F":7}}},{"name":"Cavalerie","mods":{"cavalry":100}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Esprit Nature","hp":500,"res":0.16,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"esprit-nature","owned":true,"abil":[{"cd":1,"dmg":{"N":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"N":1},"heal_tgt":"single","hits":1,"n":"Souffle d'air"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"N":1},"heal_tgt":"single","hits":1,"n":"Éolienne"}],"talents":[{"name":"Coeur de nature","mods":{"hearts":{"N":1}}},{"name":"Terrain terreux","mods":{"start":{"E":7}}},{"name":"Cavalerie","mods":{"cavalry":100}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Esprit Terre","hp":500,"res":0.15,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"esprit-terre","owned":true,"abil":[{"cd":1,"dmg":{"E":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"E":1},"heal_tgt":"single","hits":1,"n":"Souffle de terre"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"E":1},"heal_tgt":"single","hits":1,"n":"Rempart"}],"talents":[{"name":"Coeur de terre","mods":{"hearts":{"E":1}}},{"name":"Terrain naturel","mods":{"start":{"N":7}}},{"name":"Cavalerie","mods":{"cavalry":100}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Esprit Ombre","hp":500,"res":0.05,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"esprit-ombre","owned":true,"abil":[{"cd":1,"dmg":{"S":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"S":1},"heal_tgt":"single","hits":1,"n":"Souffle d'ombre"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"S":1},"heal_tgt":"single","hits":1,"n":"Obscur"}],"talents":[{"name":"Coeur d'ombre","mods":{"hearts":{"S":1}}},{"name":"Terrain lumineux","mods":{"start":{"L":7}}},{"name":"Cavalerie","mods":{"cavalry":100}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Esprit Lumière","hp":500,"res":0.06,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"esprit-lumiere","owned":true,"abil":[{"cd":1,"dmg":{"L":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"L":1},"heal_tgt":"single","hits":1,"n":"Souffle de lumière"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"L":1},"heal_tgt":"single","hits":1,"n":"Écran"}],"talents":[{"name":"Coeur de lumière","mods":{"hearts":{"L":1}}},{"name":"Terrain ombreux","mods":{"start":{"S":7}}},{"name":"Cavalerie","mods":{"cavalry":100}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Hibernatus","hp":750,"res":0.18,"spam":12,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Digue = provocation","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.3333333333333333,"id":"hibernatus","owned":true,"abil":[{"cd":2,"dmg":{"L":15,"W":15},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","rnd_gen":5,"hits":1,"n":"Haleau"},{"cd":3,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Digue"}],"talents":[{"name":"Multi Start","mods":{"start":{"F":2,"W":2,"E":2,"N":2,"S":2,"L":2}}},{"name":"Bombe-8","mods":{}},{"name":"Anticipation","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Croqueur de Fruits Verdoyant","hp":650,"res":0.05,"spam":11,"hearts":{"E":1},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"croqueur-de-fruits-verdoyant","owned":true,"abil":[{"cd":1,"dmg":{"E":25},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Dévalement"}],"talents":[{"name":"AOE épique","mods":{"splash":0.8}},{"name":"Tox chanceux","mods":{}},{"name":"Souffle-8","mods":{}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Félin Errant","hp":550,"res":0.1,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"felin-errant","owned":true,"abil":[{"cd":2,"dmg":{"S":15},"tgt":"single","acc":1.0,"cc":0.5,"cm":2,"heal_tgt":"single","hits":1,"n":"Visée offensive"},{"cd":1,"dmg":{"N":5},"tgt":"single","acc":1.0,"cc":0.01,"cm":3,"gen":{"N":1},"heal_tgt":"single","hits":1,"n":"Bond-rapide"}],"talents":[{"name":"Encaissement","mods":{}},{"name":"Roulette","mods":{}},{"name":"Évolution","mods":{}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Lueur d'Espoir","hp":900,"res":0.1,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"lueur-d-espoir","owned":true,"abil":[{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal":{"N":20,"L":20},"heal_tgt":"single","hits":1,"n":"Respiration"}],"talents":[{"name":"Tox chanceux","mods":{}},{"name":"Roulette","mods":{}},{"name":"Transition","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Artisan des Heures","hp":700,"res":0.05,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"artisan-des-heures","owned":true,"abil":[{"cd":4,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Ralentissement"},{"cd":2,"dmg":{"L":35},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","freeze":true,"hits":1,"n":"Flash"}],"talents":[{"name":"Dette","mods":{}},{"name":"Résilience","mods":{"res":0.05}},{"name":"Téméraire","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Amber","hp":900,"res":0.09,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"amber","owned":true,"abil":[{"cd":3,"dmg":{"F":10,"W":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"W":4},"heal_tgt":"single","hits":1,"n":"Feu humide"},{"cd":3,"dmg":{"W":10,"F":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"F":4},"heal_tgt":"single","hits":1,"n":"Eau-brûlante"}],"talents":[{"name":"Bouclier F/E","mods":{"res":0.08}},{"name":"Roulette","mods":{}},{"name":"Inversion","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Blaze","hp":900,"res":0.09,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"blaze","owned":true,"abil":[{"cd":3,"dmg":{"F":10,"W":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"W":4},"heal_tgt":"single","hits":1,"n":"Feu humide"},{"cd":3,"dmg":{"W":10,"F":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"F":4},"heal_tgt":"single","hits":1,"n":"Eau-brûlante"}],"talents":[{"name":"Bouclier F/E","mods":{"res":0.08}},{"name":"Roulette","mods":{}},{"name":"Inversion","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Hippocampe Nimbé","hp":900,"res":0.12,"spam":4,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Reset, Brutal","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"hippocampe-nimbe","owned":true,"abil":[{"cd":5,"dmg":{"W":25,"L":25,"N":25},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"W":3,"L":3,"N":3},"heal_tgt":"single","hits":1,"n":"Supra-rayon-humide"}],"talents":[{"name":"Multi Start","mods":{"start":{"F":2,"W":2,"E":2,"N":2,"S":2,"L":2}}},{"name":"Perçant","mods":{}},{"name":"Imprécision","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Princesse Meridia","hp":750,"res":0.2,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"princesse-meridia","owned":true,"abil":[{"cd":4,"dmg":{"N":40},"tgt":"single","acc":1.0,"cc":0.2,"cm":2,"heal_tgt":"single","freeze":true,"hits":1,"n":"Vent critique"},{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"W":3.5,"N":3.5},"heal_tgt":"single","hits":1,"n":"Volupté"}],"talents":[{"name":"Vie-8","mods":{"life8":true}},{"name":"Frappe","mods":{}},{"name":"Longueur","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Rafferu","hp":600,"res":0.1,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Secousse aléatoire touche tes cartes -> ignorée","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"rafferu","owned":true,"abil":[{"cd":1,"dmg":{"N":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","echo":0.5,"hits":1,"n":"Bond-chanceux"}],"talents":[{"name":"Reset ultime","mods":{}},{"name":"Sphère crit","mods":{}},{"name":"Brut","mods":{}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Nakyel","hp":500,"res":0.05,"spam":3,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Éternité","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"nakyel","owned":true,"abil":[{"cd":2,"dmg":{"S":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","inc":5,"hits":1,"n":"Écorchage"}],"talents":[{"name":"Coeur d'ombre","mods":{"hearts":{"S":1}}},{"name":"Longueur","mods":{}},{"name":"Vitalité des âmes","mods":{"soulvit":200}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Léo","hp":800,"res":0.05,"spam":6,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"leo","owned":true,"abil":[{"cd":4,"dmg":{"L":40},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":2,"n":"Éclair purificateur"}],"talents":[{"name":"Vie-8","mods":{"life8":true}},{"name":"Longueur","mods":{}},{"name":"Mimétisme","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Astry","hp":600,"res":0.08,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"astry","owned":true,"abil":[{"cd":4,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","rnd_gen":40,"hits":1,"n":"Génie incompris"},{"cd":3,"dmg":{"S":40},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal":{"L":40},"heal_tgt":"self","hits":1,"n":"Clair-obscur"}],"talents":[{"name":"Baleine bleue","mods":{"hp":200}},{"name":"Mystère","mods":{}},{"name":"Téméraire","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Roi des Flammes Ardentes","hp":900,"res":0.19,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Phénix, Mimétisme","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"roi-des-flammes-ardentes","owned":true,"abil":[{"cd":2,"dmg":{"F":7.5,"E":7.5},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","crit_team":0.05,"hits":1,"n":"Morsure brûlante"}],"talents":[{"name":"Riposte","mods":{}},{"name":"Évolution","mods":{}},{"name":"Sphère crit","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Sylvan","hp":550,"res":0.15,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.25,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"sylvan","owned":true,"abil":[{"cd":4,"dmg":{"N":75},"tgt":"single","acc":0.5,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Double souffle"},{"cd":1,"dmg":{"N":5},"tgt":"single","acc":1.0,"cc":0.01,"cm":3,"gen":{"N":1},"heal_tgt":"single","hits":1,"n":"Bond-rapide"}],"talents":[{"name":"Perçant","mods":{}},{"name":"Erreur croissante","mods":{}},{"name":"Virage 360","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Dragonnet des Lumières","hp":500,"res":0.05,"spam":3,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"dragonnet-des-lumieres","owned":true,"abil":[{"cd":1,"dmg":{"L":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"L":1},"heal_tgt":"single","hits":1,"n":"Éclat paisible"},{"cd":3,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"temporality_team":1,"n":"Aide pensive"}],"talents":[{"name":"Nouvelle vie","mods":{"graveyard":2}},{"name":"Nouveau riche","mods":{"spam":3}},{"name":"Pièce magique","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Souverain des Flammes","hp":900,"res":0.16,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"souverain-des-flammes","owned":true,"abil":[{"cd":1,"dmg":{"F":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Braise chaude"},{"cd":4,"dmg":{"F":20},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":3,"heal_tgt":"single","hits":1,"n":"Chaleur divine"},{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","crit_team":0.05,"hits":1,"n":"Embrasement"}],"talents":[{"name":"Bouclier partagé","mods":{"shared_shield":0.1}},{"name":"Critique","mods":{"crit_self":0.1}},{"name":"Éternisé","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Veilleur Nocturne","hp":800,"res":0.1,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Aide nocturne = provocation","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.3333333333333333,"id":"veilleur-nocturne","owned":true,"abil":[{"cd":9,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"temporality_team":3,"n":"Nuit finale"},{"cd":4,"dmg":{"S":20,"N":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":3,"heal_tgt":"single","hits":1,"n":"Tranche-ombre"},{"cd":3,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal":{"S":40},"heal_tgt":"single","hits":1,"n":"Aide nocturne"}],"talents":[{"name":"Revalorisation","mods":{"spam":5}},{"name":"Héritage","mods":{}},{"name":"Téméraire","mods":{}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Sorcière Pyrokinétique","hp":800,"res":0.07,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Coeur résistance","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"sorciere-pyrokinetique","owned":true,"abil":[{"cd":3,"dmg":{"F":25,"L":25},"tgt":"single","acc":1.0,"cc":0.2,"cm":2,"heal_tgt":"single","hits":1,"n":"Flamme magique"}],"talents":[{"name":"Coeur de lumière","mods":{"hearts":{"L":1}}},{"name":"Résilience","mods":{"res":0.05}},{"name":"Affaiblissement","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Loutre Intrépide","hp":650,"res":0.13,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"loutre-intrepide","owned":true,"abil":[{"cd":1,"dmg":{"W":6},"tgt":"single","acc":1.0,"cc":0.5,"cm":6,"heal_tgt":"single","crit_team":0.03,"hits":1,"n":"Morsure"}],"talents":[{"name":"Critique","mods":{"crit_self":0.1}},{"name":"Roulette","mods":{}},{"name":"Affaiblissement","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Lisa la Dragonnière","hp":800,"res":0.1,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Disparition","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"lisa-la-dragonniere","owned":true,"abil":[{"cd":2,"dmg":{"N":40},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"N":2},"heal_tgt":"single","hits":1,"n":"Courant aléatoire"}],"talents":[{"name":"AOE rare","mods":{"splash":0.4}},{"name":"Erreur croissante","mods":{}},{"name":"Transition","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Le Transporteur Sauvage","hp":1000,"res":0.1,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Provocation 2 tours","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.5,"id":"le-transporteur-sauvage","owned":true,"abil":[{"cd":4,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Fort"}],"talents":[{"name":"Cavalerie","mods":{"cavalry":100}},{"name":"Focus","mods":{}},{"name":"Évolution","mods":{}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Guerrier des Neiges","hp":600,"res":0.1,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"guerrier-des-neiges","owned":true,"abil":[{"cd":3,"dmg":{"E":30},"tgt":"single","acc":1.0,"cc":0.25,"cm":4,"heal_tgt":"single","freeze":true,"hits":1,"n":"Tranche-sol"},{"cd":3,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"F":3,"W":3,"E":3,"N":3,"S":3,"L":3},"heal_tgt":"single","hits":1,"n":"Multiboost"}],"talents":[{"name":"Brut","mods":{}},{"name":"Bombe-8","mods":{}},{"name":"Chance vitale","mods":{}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Protecteur des Ruines","hp":700,"res":0.13,"spam":6,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"protecteur-des-ruines","owned":true,"abil":[{"cd":1,"dmg":{"E":15},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","inc":5,"hits":1,"n":"Roule-boule"}],"talents":[{"name":"Bouclier F/E","mods":{"res":0.08}},{"name":"Bouclier F/W","mods":{"res":0.08}},{"name":"Bouclier L","mods":{"res":0.08}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Shado, Fléau Abyssal","hp":800,"res":0.13,"spam":11,"hearts":{},"berserk":0.0,"splash":0.2,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.04,"notes":"Vampirisme","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"shado-fleau-abyssal","owned":true,"abil":[{"cd":3,"dmg":{"S":50},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"S":3},"heal_tgt":"single","hits":1,"n":"Tenebr'eal"}],"talents":[{"name":"Armure des âmes","mods":{"res":0.1}},{"name":"Résilience","mods":{"res":0.05}},{"name":"Évolution","mods":{}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Maître Thronebéur","hp":850,"res":0.17,"spam":6,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"+20% précision alliés","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"maitre-thronebeur","owned":true,"abil":[{"cd":4,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Ralentissement"},{"cd":3,"dmg":{"L":20,"E":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Marteau-lumineux"}],"talents":[{"name":"Multi Start","mods":{"start":{"F":2,"W":2,"E":2,"N":2,"S":2,"L":2}}},{"name":"Fortune","mods":{"spam":2}},{"name":"Longueur","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Logidrake","hp":500,"res":0.0,"spam":6,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Vampirisme","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"logidrake","owned":true,"abil":[{"cd":1,"dmg":{"F":21},"tgt":"single","acc":0.5,"cc":0.5,"cm":2,"heal_tgt":"single","echo":0.5,"hits":1,"n":"Lucky-fire"}],"talents":[{"name":"Encaissement","mods":{}},{"name":"Nouvelle vie","mods":{"graveyard":2}},{"name":"Coeur d'acier","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Scorch","hp":350,"res":0.05,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.04,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"scorch","owned":true,"abil":[{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"F":3,"W":3,"E":3},"heal_tgt":"single","hits":1,"n":"Feau"}],"talents":[{"name":"Dette","mods":{}},{"name":"Nouvelle vie","mods":{"graveyard":2}},{"name":"Évolution","mods":{}}],"native_mult":false,"pref":1,"el":"W"},{"name":"Soigneuse Astrale des Bois","hp":600,"res":0.05,"spam":11,"hearts":{"N":1},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"soigneuse-astrale-des-bois","owned":true,"abil":[{"cd":1,"tgt":"none","acc":1.0,"cc":0.25,"cm":3,"heal":{"N":10},"heal_tgt":"all","crit_team":0.02,"hits":1,"n":"Feuille magique"}],"talents":[{"name":"Sphère crit","mods":{}},{"name":"Héritage","mods":{}},{"name":"Évolution","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Girafe Florale","hp":750,"res":0.08,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Provocation","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.5,"id":"girafe-florale","owned":true,"abil":[{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","crit_team":0.05,"hits":1,"n":"Renaissance sylvatique"}],"talents":[{"name":"Multi Start","mods":{"start":{"F":2,"W":2,"E":2,"N":2,"S":2,"L":2}}},{"name":"Cavalerie","mods":{"cavalry":100}},{"name":"Corrosion","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Luminaire Abyssal","hp":600,"res":0.09,"spam":4,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"luminaire-abyssal","owned":true,"abil":[{"cd":1,"dmg":{"W":25},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Hasardo"},{"cd":4,"dmg":{"L":40},"tgt":"aoe","acc":0.9,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Phare"}],"talents":[{"name":"Roulette","mods":{}},{"name":"Erreur croissante","mods":{}},{"name":"One Man Army","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Baleine Farceuse","hp":1000,"res":0.05,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"baleine-farceuse","owned":true,"abil":[{"cd":3,"dmg":{"W":35},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","echo":0.5,"hits":1,"n":"Hydrochance"},{"cd":6,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Ohohohohoh"}],"talents":[{"name":"Baleine bleue","mods":{"hp":200}},{"name":"Durcissement","mods":{"res":0.1}},{"name":"Cavalerie","mods":{"cavalry":100}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Panthère Imaginaire","hp":700,"res":0.05,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"panthere-imaginaire","owned":true,"abil":[{"cd":1,"dmg":{"N":9.5},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","echo":0.75,"hits":1,"n":"Vitesse folle"}],"talents":[{"name":"Brut","mods":{}},{"name":"Roulette","mods":{}},{"name":"Chance vitale","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Bleu-Mange-Cailloux","hp":500,"res":0.13,"spam":4,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Phénix, Reset","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"bleu-mange-cailloux","owned":true,"abil":[{"cd":3,"dmg":{"E":40},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Gobe-pierre"}],"talents":[{"name":"Frappe","mods":{}},{"name":"Inscrit","mods":{}},{"name":"Plume de phénix","mods":{}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Ignea","hp":900,"res":0.05,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Silenfeu = gel","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"ignea","owned":true,"abil":[{"cd":4,"dmg":{"F":140},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"F":2},"heal_tgt":"single","hits":1,"n":"Incandescence"},{"cd":3,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Silenfeu"}],"talents":[{"name":"Baleine bleue","mods":{"hp":200}},{"name":"Reset ultime","mods":{}},{"name":"Téméraire","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Frost & Glacier","hp":800,"res":0.2,"spam":4,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.5,"freeze_tox":true,"graveyard":0,"heal_pct":0.0,"notes":"2 cibles aléatoires gelées","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"frost-glacier","owned":true,"abil":[{"cd":2,"dmg":{"W":25},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":2,"n":"Eau trouble"}],"talents":[{"name":"Revalorisation","mods":{"spam":5}},{"name":"Reset ultime","mods":{}},{"name":"Pièce magique","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Pyro","hp":500,"res":0.05,"spam":6,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"pyro","owned":true,"abil":[{"cd":1,"dmg":{"F":5},"tgt":"aoe","acc":1.0,"cc":0.5,"cm":4,"gen":{"F":1},"heal_tgt":"single","hits":1,"n":"Incendie"}],"talents":[{"name":"Sphère crit","mods":{}},{"name":"Éternisé","mods":{}},{"name":"Plume de phénix","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Blancheur Aquatique","hp":800,"res":0.25,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"blancheur-aquatique","owned":true,"abil":[{"cd":5,"dmg":{"W":100},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"W":2},"heal":{"W":100},"heal_tgt":"self","hits":1,"n":"Avaleau"}],"talents":[{"name":"Bouclier F/E","mods":{"res":0.08}},{"name":"Bouclier F/W","mods":{"res":0.08}},{"name":"Bouclier L","mods":{"res":0.08}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Neilla","hp":650,"res":0.08,"spam":9,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"+5 rés alliés, provocation, Temporalité","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.25,"id":"neilla","owned":true,"abil":[{"cd":4,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal":{"W":80},"heal_tgt":"single","hits":1,"n":"Protection marine"}],"talents":[{"name":"Réducteur","mods":{}},{"name":"Inscrit","mods":{}},{"name":"Souffle-8","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Murmures du Corail Noir","hp":400,"res":0.05,"spam":2,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Multiplicateur natif","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"murmures-du-corail-noir","owned":true,"abil":[{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal":{"W":13},"heal_tgt":"single","hits":1,"n":"Murmure"},{"cd":1,"dmg":{"W":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"W":1},"heal_tgt":"single","hits":1,"n":"Souffle d'eau"}],"talents":[{"name":"Terrain ombreux","mods":{"start":{"S":7}}},{"name":"Bouclier partagé","mods":{"shared_shield":0.1}},{"name":"Roulette","mods":{}}],"native_mult":true,"pref":0,"el":"W"},{"name":"Lame de la Forêt","hp":650,"res":0.1,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"lame-de-la-foret","owned":true,"abil":[{"cd":1,"dmg":{"N":5},"tgt":"single","acc":1.0,"cc":0.01,"cm":6,"heal_tgt":"single","hits":1,"n":"Pinces"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.5,"cm":2,"heal":{"N":20},"heal_tgt":"single","hits":1,"n":"Soin critique"}],"talents":[{"name":"Coeur de nature","mods":{"hearts":{"N":1}}},{"name":"Extorsion","mods":{}},{"name":"Affaiblissement","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"L'Épine d'Amour","hp":500,"res":0.05,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Renvoi épique 75%","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"l-epine-d-amour","owned":true,"abil":[{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"E":2,"N":2,"L":2},"heal_tgt":"single","hits":1,"n":"Sagesse"}],"talents":[{"name":"Revalorisation","mods":{"spam":5}},{"name":"Pièce magique","mods":{}},{"name":"Affaiblissement","mods":{}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Lums","hp":750,"res":0.1,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"lums","owned":true,"abil":[{"cd":2,"dmg":{"L":15,"S":15},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"L":3,"S":3},"heal_tgt":"single","hits":1,"n":"Vent argenté"},{"cd":4,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Envol"}],"talents":[{"name":"Coeur de lumière","mods":{"hearts":{"L":1}}},{"name":"Coeur d'ombre","mods":{"hearts":{"S":1}}},{"name":"Sphère crit","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Aidan","hp":750,"res":0.11,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Disparition","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"aidan","owned":true,"abil":[{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","rnd_gen":10,"hits":1,"n":"Chanceur"},{"cd":3,"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","cost":{"F":10},"rnd_dmg":40,"hits":1,"n":"Paie-torche"}],"talents":[{"name":"Focus","mods":{}},{"name":"Riposte","mods":{}},{"name":"Transition","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Prisonnière de la Machine","hp":1000,"res":0.0,"spam":3,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Explosion coûte 100 PV","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.3333333333333333,"id":"prisonniere-de-la-machine","owned":true,"abil":[{"cd":1,"dmg":{"F":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","inc":10,"hits":1,"n":"Explosion"},{"cd":3,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Braisegarde"}],"talents":[{"name":"Sac de frappe","mods":{}},{"name":"Paradoxe","mods":{}},{"name":"Virage 360","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Keria","hp":550,"res":0.05,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"keria","owned":true,"abil":[{"cd":3,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","base_team":3,"hits":1,"n":"Feu allié"},{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","crit_team":0.05,"hits":1,"n":"Embrasement"}],"talents":[{"name":"Bouclier partagé","mods":{"shared_shield":0.1}},{"name":"Éternisé","mods":{}},{"name":"Souffle-8","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Fleurmarine","hp":700,"res":0.05,"spam":6,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"fleurmarine","owned":true,"abil":[{"cd":1,"dmg":{"W":10,"N":10},"tgt":"single","acc":0.5,"cc":0.5,"cm":2,"gen":{"W":1,"N":1},"heal_tgt":"single","hits":1,"n":"Nageoire sifflante"},{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Fond marin"}],"talents":[{"name":"Perçant","mods":{}},{"name":"Critique","mods":{"crit_self":0.1}},{"name":"Erreur croissante","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Esprit de la Faune","hp":800,"res":0.15,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Gel épique: Appel de la forêt gèle toutes les cartes adverses","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"esprit-de-la-faune","owned":true,"abil":[{"cd":4,"dmg":{"N":30},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":2,"gen":{"N":4},"heal_tgt":"single","freeze":true,"hits":1,"n":"Appel de la forêt"},{"n":"Soin soleil","cd":3,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal":{"L":60},"heal_tgt":"single","hits":1,"ally_freeze":true}],"talents":[{"name":"Armure des âmes","mods":{"res":0.1}},{"name":"Longueur","mods":{}},{"name":"Anticipation","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Tisseuse de Mots","hp":500,"res":0.07,"spam":2,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Veuve noire absorbe une carte","selfhit":false,"bomba":0,"instakill_cd":8,"taunt":0.0,"id":"tisseuse-de-mots","owned":true,"abil":[],"talents":[{"name":"Corrosion","mods":{}},{"name":"Sursaut vital","mods":{}},{"name":"Héritage","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Wyrm des Dunes Cornu","hp":500,"res":0.07,"spam":4,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Mimétisme","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"wyrm-des-dunes-cornu","owned":true,"abil":[{"cd":1,"dmg":{"E":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","echo":0.5,"hits":1,"n":"Grain de sable"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal":{"E":20},"heal_tgt":"single","hits":1,"n":"Soin de terre"}],"talents":[{"name":"Éternisé","mods":{}},{"name":"Vie-8","mods":{"life8":true}},{"name":"Dernier souffle","mods":{}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Spectre Canin","hp":1000,"res":0.05,"spam":7,"hearts":{"S":1,"L":1},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"spectre-canin","owned":true,"abil":[{"cd":2,"dmg":{"S":20,"L":20},"tgt":"aoe","acc":0.5,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Bim-boum"}],"talents":[{"name":"Durcissement","mods":{"res":0.1}},{"name":"One Man Army","mods":{}},{"name":"Éternisé","mods":{}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Dévoreur de Faune","hp":700,"res":0.1,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Vampirisme","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"devoreur-de-faune","owned":true,"abil":[{"cd":1,"dmg":{"S":5},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","inc":5,"hits":1,"n":"Boule de haine"}],"talents":[{"name":"Bouclier L","mods":{"res":0.08}},{"name":"Bouclier F/E","mods":{"res":0.08}},{"name":"Bouclier F/W","mods":{"res":0.08}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Wibs l'Enflammé","hp":550,"res":0.1,"spam":5,"hearts":{"F":2},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Poison","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"wibs-l-enflamme","owned":true,"abil":[{"cd":1,"dmg":{"F":5},"tgt":"single","acc":1.0,"cc":0.01,"cm":4,"heal_tgt":"single","hits":1,"n":"Écou-lave"}],"talents":[{"name":"Inscrit","mods":{}},{"name":"Frappe","mods":{}},{"name":"Erreur croissante","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Souverain des Chutes d'Éther","hp":800,"res":0.1,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"souverain-des-chutes-d-ether","owned":true,"abil":[{"cd":1,"dmg":{"W":12.5},"tgt":"single","acc":0.33,"cc":0.01,"cm":2,"heal_tgt":"single","freeze":true,"hits":1,"n":"Laser glacial"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Chute critique"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Chute précise"}],"talents":[{"name":"Affaiblissement","mods":{}},{"name":"Héritage","mods":{}},{"name":"Transition","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Cerf des Couleurs Funèbres","hp":600,"res":0.09,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Multiplicateur natif","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"cerf-des-couleurs-funebres","owned":true,"abil":[{"cd":1,"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","rnd_dmg":6,"hits":1,"n":"Drain élémentaire"}],"talents":[{"name":"Multi Start","mods":{"start":{"F":2,"W":2,"E":2,"N":2,"S":2,"L":2}}},{"name":"Encaissement","mods":{}},{"name":"Armure des âmes","mods":{"res":0.1}}],"native_mult":true,"pref":0,"el":"N"},{"name":"Souris des Blés","hp":850,"res":0.05,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"AoE rare (soins)","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"souris-des-bles","owned":true,"abil":[{"cd":3,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"E":3},"heal":{"E":125},"heal_tgt":"single","hits":1,"n":"Épidémie"}],"talents":[{"name":"Terrain lumineux","mods":{"start":{"L":7}}},{"name":"Marchandage","mods":{}},{"name":"Longueur","mods":{}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Sbire des Flammes","hp":800,"res":0.05,"spam":9,"hearts":{},"berserk":0.12,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"sbire-des-flammes","owned":true,"abil":[{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal":{"F":75},"heal_tgt":"single","hits":1,"n":"Doux foyer"}],"talents":[{"name":"Longueur","mods":{}},{"name":"Inscrit","mods":{}},{"name":"Évolution","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Le Héraut des Cendres","hp":800,"res":0.08,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Fumée","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"le-heraut-des-cendres","owned":true,"abil":[{"cd":3,"dmg":{"F":30,"N":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"F":5,"N":5},"heal_tgt":"single","hits":1,"n":"Souffle du dragon"}],"talents":[{"name":"Fortune","mods":{"spam":2}},{"name":"Focus","mods":{}},{"name":"Corrosion","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"L'Inventeur","hp":1000,"res":0.17,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Multiplicateur natif","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"l-inventeur","owned":true,"abil":[{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"F":1.5,"W":1.5,"E":1.5,"N":1.5,"S":1.5,"L":1.5},"heal_tgt":"single","hits":1,"n":"Materia"},{"cd":1,"tgt":"single","acc":1.0,"cc":0.5,"cm":2,"heal_tgt":"single","rnd_dmg":15,"hits":1,"n":"Arc-en-ciel"}],"talents":[{"name":"Vitalité des âmes","mods":{"soulvit":200}},{"name":"Roulette","mods":{}},{"name":"Chance vitale","mods":{}}],"native_mult":true,"pref":0,"el":"F"},{"name":"L'Oeil des Montagnes","hp":600,"res":0.11,"spam":9,"hearts":{"W":1},"berserk":0.12,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"l-oeil-des-montagnes","owned":true,"abil":[{"cd":4,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal":{"W":50},"heal_tgt":"single","hits":1,"n":"Revitalisation"}],"talents":[{"name":"Coeur d'acier","mods":{"res":0.05}},{"name":"Inscrit","mods":{}},{"name":"Critique","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Lapin-Plume","hp":850,"res":0.0,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Coeur résistance, Contrecoup","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"lapin-plume","owned":true,"abil":[{"cd":1,"dmg":{"N":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","inc":2,"cost":{"N":1},"hits":1,"n":"Son perçant"}],"talents":[{"name":"Vitalité des âmes","mods":{"soulvit":200}},{"name":"Évolution","mods":{}},{"name":"One Man Army","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Sanglier Doré","hp":900,"res":0.11,"spam":6,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"sanglier-dore","owned":true,"abil":[{"cd":2,"dmg":{"E":40},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"E":2},"heal_tgt":"single","maxhp_self":40,"hits":1,"n":"Remue-sol"}],"talents":[{"name":"Baleine bleue","mods":{"hp":200}},{"name":"Sursaut vital","mods":{}},{"name":"Vitalité des âmes","mods":{"soulvit":200}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Zombie Floral","hp":850,"res":0.04,"spam":5,"hearts":{"W":1,"N":1},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Disparition","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"zombie-floral","owned":true,"abil":[{"cd":8,"dmg":{"W":45,"N":45},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Malédiction aquatique"}],"talents":[{"name":"Revalorisation","mods":{"spam":5}},{"name":"Reset ultime","mods":{}},{"name":"Transition","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Rob l'Aventurier","hp":500,"res":0.05,"spam":9,"hearts":{"S":1,"E":1},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"rob-l-aventurier","owned":true,"abil":[{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"E":1},"heal_tgt":"single","base_team":1,"hits":1,"n":"Aventure"}],"talents":[{"name":"Heure fatidique","mods":{}},{"name":"Inscrit","mods":{}},{"name":"Évolution","mods":{}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Moxilys","hp":900,"res":0.075,"spam":9,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"moxilys","owned":true,"abil":[{"cd":7,"dmg":{"S":75},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Idée sombre"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal":{"N":40},"heal_tgt":"single","hits":1,"n":"Regenair"}],"talents":[{"name":"Vie-8","mods":{"life8":true}},{"name":"Résilience","mods":{"res":0.05}},{"name":"Pièce magique","mods":{}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Épine Médusine","hp":800,"res":0.2,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Multiplicateur natif","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"epine-medusine","owned":true,"abil":[{"cd":1,"dmg":{"W":15},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal":{"F":15},"heal_tgt":"single","hits":1,"n":"Toxine enflammée"},{"cd":3,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"W":7},"heal_tgt":"single","hits":1,"once_at":1,"n":"Mue"}],"talents":[{"name":"Inscrit","mods":{}},{"name":"Longueur","mods":{}},{"name":"Affaiblissement","mods":{}}],"native_mult":true,"pref":0,"el":"S"},{"name":"Dragon Ciel","hp":700,"res":0.05,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Vengeur","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"dragon-ciel","owned":true,"abil":[{"cd":4,"dmg":{"L":40},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Souffle éblouissant"},{"cd":4,"dmg":{"N":30},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":2,"gen":{"N":4},"heal_tgt":"single","hits":1,"n":"Appel de la forêt"}],"talents":[{"name":"Fortune","mods":{"spam":2}},{"name":"Dernier souffle","mods":{}},{"name":"Reset ultime","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Commando Gerz","hp":1200,"res":0.095,"spam":4,"hearts":{},"berserk":0.25,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"commando-gerz","owned":true,"abil":[{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"E":3,"L":3},"heal_tgt":"single","hits":1,"n":"Cigarillos"},{"cd":10,"dmg":{"E":100,"L":100},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Dernier plaisir"}],"talents":[{"name":"Coeur d'acier","mods":{"res":0.08}},{"name":"Vitalité des âmes","mods":{"soulvit":200}},{"name":"Imprécision","mods":{}}],"native_mult":false,"pref":1,"el":"E"},{"name":"Lames en Peine","hp":550,"res":-0.13,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":5,"heal_pct":0.0,"notes":"Coeur résistance, Chanceux","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"lames-en-peine","owned":true,"abil":[],"talents":[{"name":"Marchandage","mods":{}},{"name":"Cavalerie","mods":{"cavalry":100}},{"name":"Longueur","mods":{}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Ameru","hp":800,"res":0.1,"spam":15,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Fumée","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"ameru","owned":true,"abil":[{"cd":3,"dmg":{"L":15,"W":15,"S":15},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"L":4,"W":4,"S":4},"heal_tgt":"single","hits":1,"n":"Rêve enfumé"}],"talents":[{"name":"Durcissement","mods":{"res":0.1}},{"name":"Cavalerie","mods":{"cavalry":100}},{"name":"Corrosion","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Vladislaus","hp":350,"res":0.3,"spam":4,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Ténacité; Transfusion vole 100 PV max à un allié","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"vladislaus","owned":true,"abil":[{"cd":1,"dmg":{"F":5,"S":5},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","inc":5,"hits":1,"n":"Double-afflux"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Transfusion"}],"talents":[{"name":"Vitalité des âmes","mods":{"soulvit":200}},{"name":"Sursaut vital","mods":{}},{"name":"Plume de phénix","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Gabriel","hp":1000,"res":0.1,"spam":9,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"gabriel","owned":true,"abil":[{"cd":3,"dmg":{"N":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"N":5},"heal_tgt":"single","hits":1,"once_at":3,"n":"Cocon","gabriel":true},{"cd":6,"dmg":{"N":40},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"N":10},"heal_tgt":"single","hits":1,"once_at":6,"n":"Chenille","gabriel":true},{"cd":9,"dmg":{"N":60},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"N":15},"heal_tgt":"single","hits":1,"once_at":9,"n":"Papillon","gabriel":true}],"talents":[{"name":"Terrain terreux","mods":{"start":{"E":7}}},{"name":"Vitalité des âmes","mods":{"soulvit":200}},{"name":"Tox chanceux","mods":{}}],"native_mult":false,"pref":1,"el":"N"},{"name":"Ephial","hp":1500,"res":0.2,"spam":12,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Reset","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"ephial","owned":true,"abil":[{"cd":4,"dmg":{"L":7,"S":7,"N":6},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","maxhp_team":75,"hits":1,"n":"Plaquage astral"},{"cd":5,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal":{"L":70},"heal_tgt":"all","hits":1,"n":"Planète soin"}],"talents":[{"name":"Cavalerie","mods":{"cavalry":100}},{"name":"Focus","mods":{}},{"name":"Tox chanceux","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Catimimi","hp":500,"res":-0.07,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"catimimi","owned":true,"abil":[{"cd":2,"dmg":{"S":15,"N":15,"F":15},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":2,"gen":{"S":3,"N":3,"F":3},"heal_tgt":"single","cost":{"S":2,"N":2,"F":2},"hits":1,"n":"Claque sombrevol"}],"talents":[{"name":"Pièce magique","mods":{}},{"name":"Héritage","mods":{}},{"name":"Éternisé","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Dragosaure Céleste","hp":800,"res":0.16,"spam":12,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Reset","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"dragosaure-celeste","owned":true,"abil":[{"cd":3,"dmg":{"N":55},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","freeze":true,"hits":1,"n":"Hurle frappe"}],"talents":[{"name":"AOE rare","mods":{"splash":0.4}},{"name":"Critique","mods":{"crit_self":0.1}},{"name":"Armure des âmes","mods":{"res":0.1}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Catixy","hp":600,"res":0.15,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"catixy","owned":true,"abil":[{"cd":1,"dmg":{"S":10},"tgt":"single","acc":1.0,"cc":0.25,"cm":4,"heal_tgt":"single","crit_self":0.05,"hits":1,"n":"Miaulement"},{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Charme sinistre"}],"talents":[{"name":"Critique","mods":{"crit_self":0.1}},{"name":"Extorsion","mods":{}},{"name":"Inversion","mods":{}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Crapaud des Étoiles","hp":1000,"res":0.05,"spam":9,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Sac de frappe, Contrecoup","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"crapaud-des-etoiles","owned":true,"abil":[{"cd":2,"dmg":{"L":40},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Œil pour œil"}],"talents":[{"name":"Vitalité des âmes","mods":{"soulvit":200}},{"name":"Terrain aquatique","mods":{"start":{"W":7}}},{"name":"Évolution","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Fleur de Vie","hp":600,"res":0.0,"spam":7,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Provocation","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.9,"id":"fleur-de-vie","owned":true,"abil":[{"cd":1,"dmg":{"L":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"gen":{"L":1},"heal_tgt":"single","hits":1,"n":"Souffle de lumière"},{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Barrière florale"}],"talents":[{"name":"Bouclier partagé","mods":{"shared_shield":0.1}},{"name":"Coeur corrompu","mods":{}},{"name":"Perçant","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Apprenti Évocateur","hp":800,"res":0.13,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Mystère x2","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"apprenti-evocateur","owned":true,"abil":[{"cd":3,"dmg":{"W":50},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Petit sortilège"}],"talents":[{"name":"Vitalité des âmes","mods":{"soulvit":200}},{"name":"Résilience","mods":{"res":0.05}},{"name":"Téméraire","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Chouette Polychrome","hp":500,"res":0.1,"spam":9,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Touche aussi tes cartes -> exclue","selfhit":true,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"chouette-polychrome","owned":true,"abil":[{"cd":2,"dmg":{"F":30,"W":30,"E":30,"N":30,"S":30,"L":30},"tgt":"single","acc":1.0,"cc":0.5,"cm":2,"heal_tgt":"single","hits":1,"n":"Danse des plumes"}],"talents":[{"name":"Dernier souffle","mods":{}},{"name":"Téméraire","mods":{}},{"name":"Virage 360","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Maître Amphibien","hp":700,"res":0.25,"spam":4,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.25,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"maitre-amphibien","owned":true,"abil":[{"cd":1,"dmg":{"E":15,"W":15},"tgt":"aoe","acc":0.5,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Miasmes de la sagesse"}],"talents":[{"name":"Durcissement","mods":{"res":0.1}},{"name":"Longueur","mods":{}},{"name":"13e mois","mods":{}}],"native_mult":false,"pref":0,"el":"E"},{"name":"Aleera","hp":500,"res":0.05,"spam":5,"hearts":{"S":1},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"+50% PV manquants en dégâts","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"aleera","owned":true,"abil":[{"cd":2,"dmg":{"S":5},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Mâche-mot"}],"talents":[{"name":"Bouclier L","mods":{"res":0.08}},{"name":"Bouclier F/W","mods":{"res":0.08}},{"name":"Résilience","mods":{"res":0.05}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Oisillons de Midas","hp":500,"res":0.05,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"oisillons-de-midas","owned":true,"abil":[{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"L":3},"heal":{"L":40},"heal_tgt":"single","hits":1,"n":"Piou-piou-piou"},{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","base_team":2,"hits":1,"n":"Quintuor"}],"talents":[{"name":"Souffle-8","mods":{}},{"name":"Paradoxe","mods":{}},{"name":"Téméraire","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Rongeur Nuageux","hp":650,"res":0.07,"spam":11,"hearts":{},"berserk":0.0,"splash":0.2,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Provocation","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.5,"id":"rongeur-nuageux","owned":true,"abil":[{"cd":2,"dmg":{"L":30},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Foudre"}],"talents":[{"name":"Bouclier L","mods":{"res":0.08}},{"name":"Bouclier F/E","mods":{"res":0.08}},{"name":"Évolution","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Apprentie de la Mort","hp":700,"res":0.07,"spam":6,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":3,"heal_pct":0.0,"notes":"Vengeur","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"apprentie-de-la-mort","owned":true,"abil":[{"cd":3,"dmg":{"F":25,"S":25},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Brûlure nocturne"}],"talents":[{"name":"Durcissement","mods":{"res":0.1}},{"name":"Revitalisation","mods":{}},{"name":"Heure fatidique","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Vivy","hp":1000,"res":0.15,"spam":9,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Fumée","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"vivy","owned":true,"abil":[{"cd":3,"dmg":{"S":40,"L":20},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","crit_self":0.2,"hits":1,"n":"Onde de ténèbres"}],"talents":[{"name":"Terrain lumineux","mods":{"start":{"L":7}}},{"name":"Baleine bleue","mods":{"hp":200}},{"name":"Brut","mods":{}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Gazpoison Flottant","hp":450,"res":0.25,"spam":4,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Poison, Ténacité","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"gazpoison-flottant","owned":true,"abil":[{"cd":1,"dmg":{"S":10},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Explosion"}],"talents":[{"name":"Riposte","mods":{}},{"name":"Évolution","mods":{}},{"name":"Corrosion","mods":{}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Shinobi Éclairant","hp":600,"res":0.05,"spam":6,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"shinobi-eclairant","owned":true,"abil":[{"cd":5,"dmg":{"L":50},"tgt":"aoe","acc":1.0,"cc":0.01,"cm":3,"heal_tgt":"single","hits":1,"n":"Éclair jaune"},{"cd":5,"dmg":{"E":40},"tgt":"single","acc":1.0,"cc":0.25,"cm":3,"heal_tgt":"single","hits":1,"n":"Kung-fu"}],"talents":[{"name":"Multicolore","mods":{"shinobi_multi":true}},{"name":"Sphère crit","mods":{}},{"name":"Brut","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Roi Nature","hp":1000,"res":0.1,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Sac de frappe","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"roi-nature","owned":true,"abil":[{"cd":3,"dmg":{"N":40},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Lame-N"},{"cd":5,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"N":10},"heal_tgt":"single","hits":1,"n":"Choix floral"}],"talents":[{"name":"Focus","mods":{}},{"name":"Évolution","mods":{}},{"name":"Reset ultime","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Roi Lumière","hp":1000,"res":0.1,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Sac de frappe","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"roi-lumiere","owned":true,"abil":[{"cd":3,"dmg":{"L":40},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Lame-L"},{"cd":5,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"gen":{"L":10},"heal_tgt":"single","hits":1,"n":"Choix solaire"}],"talents":[{"name":"Focus","mods":{}},{"name":"Évolution","mods":{}},{"name":"Reset ultime","mods":{}}],"native_mult":false,"pref":0,"el":"L"},{"name":"Dragon de la Cité Infernale","hp":750,"res":0.16,"spam":10,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":true,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"dragon-de-la-cite-infernale","owned":true,"abil":[{"cd":2,"dmg":{"F":13.75,"S":13.75},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Dualité draconique"}],"talents":[{"name":"Coeur d'ombre","mods":{"hearts":{"S":1}}},{"name":"Coeur de feu","mods":{"hearts":{"F":1}}},{"name":"Immunité-8","mods":{}}],"native_mult":false,"pref":0,"el":"F"},{"name":"Le Compagnon des Esprits","hp":600,"res":0.05,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Immunité","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"le-compagnon-des-esprits","owned":true,"abil":[{"cd":1,"dmg":{"W":10},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","echo":0.5,"hits":1,"n":"Petite vague"},{"cd":1,"dmg":{"W":25},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Hasardo"}],"talents":[{"name":"One Man Army","mods":{}},{"name":"Riposte","mods":{}},{"name":"Pièce magique","mods":{}}],"native_mult":false,"pref":0,"el":"W"},{"name":"Yotaru Gardefeuille","hp":500,"res":0.05,"spam":5,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.5,"id":"yotaru-gardefeuille","owned":true,"abil":[{"cd":1,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Protect"},{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Protect-terre"},{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","base_team":3,"hits":1,"n":"Protect-boost"}],"talents":[{"name":"Bouclier partagé","mods":{"shared_shield":0.1}},{"name":"Focus","mods":{}},{"name":"Transition","mods":{}}],"native_mult":false,"pref":0,"el":"N"},{"name":"Paguroniyx","hp":850,"res":0.08,"spam":8,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"Mystère","selfhit":false,"bomba":0,"instakill_cd":0,"taunt":0.0,"id":"paguroniyx","owned":true,"abil":[{"cd":4,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","maxhp_team":100,"hits":1,"n":"Terrier"},{"cd":2,"dmg":{"S":30},"tgt":"single","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Cisaille vénéneuse"}],"talents":[{"name":"Multi Start","mods":{"start":{"F":2,"W":2,"E":2,"N":2,"S":2,"L":2}}},{"name":"Vitalité des âmes","mods":{"soulvit":200}},{"name":"Anticipation","mods":{}}],"native_mult":false,"pref":0,"el":"S"},{"name":"Aristocrate Nébulaire","hp":500,"res":-0.05,"spam":3,"hearts":{},"berserk":0.0,"splash":0.0,"erosion":0.0,"freeze_tox":false,"graveyard":0,"heal_pct":0.0,"notes":"","selfhit":false,"bomba":500,"instakill_cd":0,"taunt":0.0,"id":"aristocrate-nebulaire","owned":true,"abil":[{"cd":2,"tgt":"none","acc":1.0,"cc":0.01,"cm":2,"heal_tgt":"single","hits":1,"n":"Mascarade cosmique"}],"talents":[{"name":"Éternisé","mods":{}},{"name":"Longueur","mods":{}},{"name":"Transition","mods":{}}],"native_mult":false,"pref":0,"el":"L"}],"curve":[212.8000030517578,248.60000610351562,298.5,349.3999938964844,464.6000061035156,620.2000122070312,798.0,1020.7000122070312,1266.0999755859375,1493.300048828125,1759.5,2021.800048828125,2293.5,2588.300048828125,2878.800048828125,3178.5,3499.5,3805.800048828125,4133.2998046875,4470.2001953125]}</script>
+<script id="engine">
+/* ===== Moteur de simulation SPAM (partagé page + worker) ===== */
+var EL = 'FWENSL';
+var ELN = { F: 'Feu', W: 'Eau', E: 'Terre', N: 'Nature', S: 'Ombre', L: 'Lumière' };
+var T = 20;
+var DEATH_TURNS = [5, 8, 11, 14];
+function deathsBy(t) { var n = 0; for (var i = 0; i < DEATH_TURNS.length; i++) if (DEATH_TURNS[i] <= t) n++; return n; }
+function eix(e) { return EL.indexOf(e); }
+
+/* Règles inconnues: valeur concrète utilisée pour la recherche rapide ("milieu") */
+function midRules(R) {
+  var m = Object.assign({}, R);
+  m.healScale = R.healScale === '?' ? 0.5 : (R.healScale ? 1 : 0);
+  m.sharedPool = R.sharedPool === '?' ? true : R.sharedPool;
+  m.gabrielOnce = R.gabrielOnce === '?' ? true : R.gabrielOnce;
+  m.faunaAllyFreeze = R.faunaAllyFreeze === '?' ? false : R.faunaAllyFreeze;
+  m.owlAllies = R.owlAllies === '?' ? true : R.owlAllies;
+  m.berserkStack = R.berserkStack === '?' ? true : R.berserkStack;
+  m.cavalryStack = R.cavalryStack === '?' ? true : R.cavalryStack;
+  m.freezeF = R.freezeFull === '?' ? 0.75 : (R.freezeFull === 'partiel' ? 0.5 : (R.freezeFull ? 1 : 0));
+  return m;
+}
+
+/* Séries temporelles d'une carte (cadences lissées sur 20 tours) */
+function cardSeries(card, ti, C) {
+  var tal = card.talents[ti] || { name: '-', mods: {} };
+  var m = tal.mods || {};
+  var z = function () { return new Float64Array(6 * T); };
+  var S = {
+    genTeam: z(), genOwn: z(), coef: z(), hAll: z(), hSingle: z(), hSelf: z(),
+    critAcc: new Float64Array(T), baseAcc: new Float64Array(T), kcrit: new Float64Array(T),
+    inst: new Float64Array(T), maxhp: new Float64Array(T), freeze: 0, nzE: []
+  };
+  var hearts = Object.assign({}, card.hearts || {});
+  var mh = m.hearts || {};
+  for (var e in mh) hearts[e] = (hearts[e] || 0) + mh[e];
+  var start = m.start || {};
+  for (var i = 0; i < 6; i++) {
+    var el = EL[i];
+    for (var k = 0; k < T; k++) S.genTeam[i * T + k] += (start[el] || 0) + (hearts[el] || 0) * (k + 1);
+  }
+  if (m.shinobi_multi) for (var i2 = 0; i2 < 6 * T; i2++) S.genOwn[i2] += 0.4 * ((i2 % T) + 1);
+  var critSelfStatic = m.crit_self || 0;
+  var splash = (card.splash || 0) + (m.splash || 0);
+  var owlFactor = (card.selfhit && C.owlAllies) ? 0.5 : 1;
+  (card.abil || []).forEach(function (ab) {
+    if (ab.ally_freeze && C.faunaAllyFreeze) return;           // soin qui gèlerait ta carte: pas utilisé
+    var cd = Math.max(1, ab.cd || 1);
+    var echo = ab.echo || 0;
+    var rate = 1 / cd / Math.max(1e-9, 1 - echo);
+    var acc = ab.acc == null ? 1 : ab.acc, cc0 = ab.cc == null ? 0.01 : ab.cc, cm = ab.cm || 2, hits = ab.hits || 1;
+    var tgt = ab.tgt || 'single';
+    var once = ab.once_at && (!ab.gabriel || C.gabrielOnce);
+    var dm = Object.assign({}, ab.dmg || {});
+    if (ab.rnd_dmg) for (var q = 0; q < 6; q++) dm[EL[q]] = (dm[EL[q]] || 0) + ab.rnd_dmg / 6;
+    var tg = tgt === 'aoe' ? C.aoeTargets : 1;
+    var sp = tgt === 'aoe' ? 1 : 1 + splash * 1.2;
+    if (once) {
+      var at = ab.once_at;
+      for (var e3 in (ab.gen || {})) for (var k3 = at - 1; k3 < T; k3++) S.genOwn[eix(e3) * T + k3] += ab.gen[e3];
+      for (var e4 in dm) if (at - 1 < T) S.coef[eix(e4) * T + at - 1] += dm[e4] * acc * tg * sp * (1 + cc0 * (cm - 1)) * owlFactor;
+      return;
+    }
+    var cost = ab.cost || {};
+    var hasCost = Object.keys(cost).length > 0;
+    if (hasCost) {
+      var selfPaid = Object.keys(cost).every(function (ce) { return ((ab.gen || {})[ce] || 0) >= cost[ce]; });
+      if (!selfPaid) return;                                        // ex: Paie-torche d'Aidan, coût trop cher: ignoré
+    }
+    for (var k = 0; k < T; k++) {
+      var t = k + 1;
+      for (var ge in (ab.gen || {})) S.genOwn[eix(ge) * T + k] += (ab.gen[ge] - (cost[ge] || 0)) * rate * t;
+      if (ab.rnd_gen) for (var q2 = 0; q2 < 6; q2++) S.genOwn[q2 * T + k] += ab.rnd_gen / 6 * rate * t;
+      S.critAcc[k] += (ab.crit_team || 0) * rate * t;
+      S.baseAcc[k] += (ab.base_team || 0) * rate * t;
+      S.maxhp[k] += (ab.maxhp_team || 0) * 4 * rate * t + (ab.maxhp_self || 0) * rate * t;
+    }
+    var keys = Object.keys(dm);
+    if (keys.length) {
+      var cc = Math.min(1, cc0 + critSelfStatic);
+      var mult = acc * tg * sp * (1 + (card.erosion || 0)) * rate * hits * owlFactor;
+      var sum = 0; keys.forEach(function (x) { sum += dm[x]; });
+      for (var k2 = 0; k2 < T; k2++) {
+        var ccs = Math.min(1, cc + (ab.crit_self || 0) * rate * k2);
+        var critf = 1 + ccs * (cm - 1);
+        keys.forEach(function (x, idx) {
+          var b = dm[x] + (idx === 0 ? (ab.inc || 0) * rate * k2 : 0);
+          S.coef[eix(x) * T + k2] += b * critf * mult;
+        });
+        S.kcrit[k2] += sum * (cm - 1) * mult;
+        S.inst[k2] += mult;
+      }
+      if (ab.freeze || card.freeze_tox) S.freeze += rate * acc * (tgt === 'aoe' ? 1 : hits / 4);
+    }
+    if (ab.heal && Object.keys(ab.heal).length) {
+      var critfH = 1 + cc0 * (cm - 1);
+      var dest = ab.heal_tgt === 'all' ? S.hAll : (ab.heal_tgt === 'self' ? S.hSelf : S.hSingle);
+      for (var he in ab.heal) for (var k4 = 0; k4 < T; k4++) dest[eix(he) * T + k4] += ab.heal[he] * critfH * rate;
+    }
+  });
+  for (var i5 = 0; i5 < 6; i5++) { for (var k5 = 0; k5 < T; k5++) if (S.coef[i5 * T + k5]) { S.nzE.push(i5); break; } }
+  S.hp = card.hp + (m.hp || 0);
+  S.res = (card.res || 0) + (m.res || 0);
+  S.spam = (card.spam || 0) + (m.spam || 0);
+  S.berserk = card.berserk || 0;
+  S.cavalry = m.cavalry || 0;
+  S.soulvit = m.soulvit || 0;
+  S.life8 = !!m.life8;
+  S.shared = m.shared_shield || 0;
+  S.healPct = card.heal_pct || 0;
+  S.graveyard = (card.graveyard || 0) + (m.graveyard || 0);
+  S.instakill = card.instakill_cd || 0;
+  S.bomba = card.bomba || 0;
+  S.nativeMult = !!card.native_mult;
+  S.taunt = (card.taunt || 0) + (tal.name === 'Focus' ? 0.25 : 0);
+  S.talent = tal.name;
+  S.selfhit = !!card.selfhit && C.owlAllies;
+  return S;
+}
+
+/* Évaluation rapide d'un deck (recherche sur tous les decks) */
+function fastEval(Ss, C, curve, wantDmg) {
+  var n = Ss.length, pt = C.pt / 100;
+  var team = new Float64Array(6 * T), own = new Float64Array(6 * T);
+  var spam = 0, bers = 0, bmax = 0, crit = new Float64Array(T), base = new Float64Array(T);
+  var mainW = new Float64Array(6), gy = 0;
+  for (var j = 0; j < n; j++) {
+    var s = Ss[j];
+    for (var x = 0; x < 6 * T; x++) { team[x] += s.genTeam[x]; own[x] += s.genOwn[x]; }
+    spam += s.spam; bers += s.berserk; if (s.berserk > bmax) bmax = s.berserk;
+    for (var k = 0; k < T; k++) { crit[k] += s.critAcc[k]; base[k] += s.baseAcc[k]; }
+    for (var e = 0; e < 6; e++) mainW[e] += s.coef[e * T + 9];
+    gy += s.graveyard;
+  }
+  var main = 0; for (var e2 = 1; e2 < 6; e2++) if (mainW[e2] > mainW[main]) main = e2;
+  // boutique: Coeurs
+  var bank = 0, nb = 0;
+  for (var k2 = 0; k2 < T; k2++) {
+    var t = k2 + 1; bank += spam;
+    if (t >= C.heartFrom && bank >= C.heartCost && nb < C.hearts) {
+      bank -= C.heartCost; nb++;
+      for (var kk = k2; kk < T; kk++) team[main * T + kk] += C.heartGain * (kk + 1 - t);
+    }
+  }
+  if (gy) for (var k3 = 0; k3 < T; k3++) { var d = deathsBy(k3 + 1) * gy; for (var e3 = 0; e3 < 6; e3++) team[e3 * T + k3] += d; }
+  var dmg = new Float64Array(T), heal = new Float64Array(T);
+  var hs = C.healScale;
+  for (var j2 = 0; j2 < n; j2++) {
+    var s2 = Ss[j2], mf = s2.nativeMult ? 2 : 1;
+    for (var k4 = 0; k4 < T; k4++) {
+      var dd = crit[k4] * s2.kcrit[k4] + base[k4] * s2.inst[k4], hh = 0;
+      for (var e4 = 0; e4 < 6; e4++) {
+        var idx = e4 * T + k4;
+        var pool = team[idx] + (C.sharedPool ? own[idx] : s2.genOwn[idx]);
+        var sc = 1 + pt * pool * mf;
+        if (s2.coef[idx]) dd += s2.coef[idx] * sc;
+        var hv = s2.hAll[idx] * 4 + s2.hSingle[idx] + s2.hSelf[idx];
+        if (hv) hh += hv * (1 + (sc - 1) * hs);
+      }
+      dmg[k4] += dd; heal[k4] += hh;
+    }
+  }
+  var bm = 1 + (C.berserkStack ? bers : bmax);
+  for (var k5 = 0; k5 < T; k5++) { dmg[k5] *= bm; heal[k5] *= bm; }
+  for (var j3 = 0; j3 < n; j3++) {
+    var s3 = Ss[j3];
+    if (s3.instakill) for (var t0 = 1; t0 <= T; t0 += s3.instakill) dmg[t0 - 1] += 800;
+    if (s3.bomba) dmg[5] += s3.bomba;
+  }
+  if (wantDmg) return dmg;
+  var EHP = C.enemyEHP, cum = 0, tkill = null;
+  for (var k6 = 0; k6 < T; k6++) {
+    if (cum + dmg[k6] >= EHP) { tkill = k6 + (EHP - cum) / Math.max(dmg[k6], 1e-9); break; }
+    cum += dmg[k6];
+  }
+  if (tkill === null) tkill = T + (EHP - cum) / Math.max(dmg[T - 1], 1e-9);
+  var resS = 0, shS = 0, frz = 0, hp0 = 0, cavS = 0, cavM = 0, soul = 0, life8 = 0, hpct = 0;
+  for (var j4 = 0; j4 < n; j4++) {
+    var s4 = Ss[j4];
+    resS += s4.res; shS += s4.shared; frz += s4.freeze; hp0 += s4.hp; cavS += s4.cavalry; if (s4.cavalry > cavM) cavM = s4.cavalry;
+    soul += s4.soulvit; if (s4.life8) life8 += s4.hp; hpct += s4.healPct * s4.hp;
+  }
+  var res = Math.min(0.6, resS / n + shS);
+  frz = Math.min(0.6, frz * C.freezeF);
+  hp0 += (C.cavalryStack ? cavS : cavM) * 3;
+  var taken = 0, tdie = T + 5;
+  for (var k7 = 0; k7 < T; k7++) {
+    var tt = k7 + 1, mh = 0;
+    for (var j5 = 0; j5 < n; j5++) mh += Ss[j5].maxhp[k7];
+    var ehp = (hp0 + soul * deathsBy(tt) + mh + (tt >= 8 ? life8 : 0)) / (1 - res);
+    var inc = curve[k7] * C.enemyF / 100 * (1 - frz);
+    var h = (heal[k7] + hpct) / (1 - res);
+    var nw = Math.max(0, taken + inc - h);
+    if (nw >= ehp) { tdie = k7 + Math.max(0, Math.min(1, (ehp - taken) / Math.max(inc - h, 1e-9))); break; }
+    taken = nw;
+  }
+  return { score: tdie / tkill, tkill: tkill, tdie: tdie };
+}
+
+/* Simulation détaillée: chaque carte peut mourir, l'adversaire vise la plus dangereuse */
+function simDetail(cards, Ss, multK, C, curve, wantLog) {
+  var n = Ss.length, pt = C.pt / 100;
+  var cavOthers = function (j) {
+    if (C.cavalryStack) { var s = 0; for (var i = 0; i < n; i++) if (i !== j) s += Ss[i].cavalry; return s; }
+    var mx = 0; for (var i2 = 0; i2 < n; i2++) if (i2 !== j && Ss[i2].cavalry > mx) mx = Ss[i2].cavalry; return mx;
+  };
+  var maxhp = [], hp = [], res = [], alive = [], sharedS = 0;
+  for (var j = 0; j < n; j++) sharedS += Ss[j].shared;
+  for (var j1 = 0; j1 < n; j1++) {
+    maxhp.push(Ss[j1].hp + cavOthers(j1)); hp.push(maxhp[j1]);
+    res.push(Math.min(0.75, Ss[j1].res + sharedS)); alive.push(true);
+  }
+  var pool = new Float64Array(6), own = []; for (var j2 = 0; j2 < n; j2++) own.push(new Float64Array(6));
+  var mainW = new Float64Array(6);
+  for (var j3 = 0; j3 < n; j3++) for (var e = 0; e < 6; e++) mainW[e] += Ss[j3].coef[e * T + 9];
+  var main = 0; for (var e1 = 1; e1 < 6; e1++) if (mainW[e1] > mainW[main]) main = e1;
+  var bank = 0, nh = 0, multOn = false, multTurn = null, heartPool = 0;
+  var EHP = C.enemyEHP, rem = EHP, enemyDeaths = 0, tkill = null, tdie = null;
+  var log = [];
+  var addDeathBonus = function () {
+    for (var i = 0; i < n; i++) if (alive[i]) {
+      if (Ss[i].graveyard) for (var e = 0; e < 6; e++) pool[e] += Ss[i].graveyard;
+      if (Ss[i].soulvit) { maxhp[i] += Ss[i].soulvit; hp[i] += Ss[i].soulvit; }
+    }
+  };
+  var hs = C.healScale;
+  for (var k = 0; k < T + 5; k++) {
+    var t = k + 1, kk = Math.min(k, T - 1), ev = [];
+    var spamNow = 0; for (var a = 0; a < n; a++) if (alive[a]) spamNow += Ss[a].spam;
+    bank += spamNow;
+    if (multK != null && !multOn && t >= C.multFrom && bank >= C.multCost && alive[multK]) {
+      bank -= C.multCost; multOn = true; multTurn = t; ev.push('Multiplicateur acheté (' + cards[multK].name + ')');
+    } else if ((multK == null || multOn || !alive[multK]) && t >= C.heartFrom && bank >= C.heartCost && nh < C.hearts) {
+      bank -= C.heartCost; nh++; ev.push('Coeur ' + ELN[EL[main]] + ' acheté');
+    }
+    if (t > 1) heartPool += C.heartGain * nh;
+    // génération de bonus (incréments du tour)
+    for (var j4 = 0; j4 < n; j4++) {
+      if (!alive[j4] && k > 0) continue;
+      for (var e2 = 0; e2 < 6; e2++) {
+        var idx = e2 * T + kk, prev = kk > 0 ? idx - 1 : -1;
+        var dTeam = k < T ? Ss[j4].genTeam[idx] - (prev >= 0 ? Ss[j4].genTeam[prev] : 0) : Ss[j4].genTeam[idx] - Ss[j4].genTeam[idx - 1];
+        var dOwn = k < T ? Ss[j4].genOwn[idx] - (prev >= 0 ? Ss[j4].genOwn[prev] : 0) : Ss[j4].genOwn[idx] - Ss[j4].genOwn[idx - 1];
+        pool[e2] += dTeam;
+        if (C.sharedPool) pool[e2] += dOwn; else own[j4][e2] += dOwn;
+      }
+    }
+    var effPool = function (j, e) { return pool[e] + (e === main ? heartPool : 0) + (C.sharedPool ? 0 : own[j][e]); };
+    var dmgC = new Float64Array(n), healAll = 0, healSingle = 0, healSelf = new Float64Array(n);
+    var critT = 0, baseT = 0;
+    for (var a2 = 0; a2 < n; a2++) if (alive[a2]) { critT += Ss[a2].critAcc[kk]; baseT += Ss[a2].baseAcc[kk]; }
+    for (var j5 = 0; j5 < n; j5++) {
+      if (!alive[j5]) continue;
+      var s = Ss[j5], mf = (s.nativeMult || (multOn && j5 === multK)) ? 2 : 1;
+      var d = critT * s.kcrit[kk] + baseT * s.inst[kk], hA = 0, hSi = 0, hSe = 0;
+      for (var e3 = 0; e3 < 6; e3++) {
+        var id2 = e3 * T + kk, sc = 1 + pt * effPool(j5, e3) * mf, hsc = 1 + (sc - 1) * hs;
+        d += s.coef[id2] * sc;
+        hA += s.hAll[id2] * hsc; hSi += s.hSingle[id2] * hsc; hSe += s.hSelf[id2] * hsc;
+      }
+      dmgC[j5] = d; healAll += hA; healSingle += hSi; healSelf[j5] += hSe + s.healPct * maxhp[j5];
+    }
+    var bs = 0, bmx = 0; for (var a3 = 0; a3 < n; a3++) if (alive[a3]) { bs += Ss[a3].berserk; if (Ss[a3].berserk > bmx) bmx = Ss[a3].berserk; }
+    var b = 1 + (C.berserkStack ? bs : bmx);
+    var total = 0; for (var j6 = 0; j6 < n; j6++) total += dmgC[j6];
+    total *= b;
+    for (var j7 = 0; j7 < n; j7++) if (alive[j7] && Ss[j7].instakill && (t - 1) % Ss[j7].instakill === 0) { total += 800; ev.push(cards[j7].name + ' absorbe une carte'); }
+    var remBefore = rem; rem -= total;
+    while (enemyDeaths < 3 && rem <= EHP * (3 - enemyDeaths) / 4) { enemyDeaths++; ev.push('Une carte adverse tombe'); addDeathBonus(); }
+    var frzNow = 0; for (var a4 = 0; a4 < n; a4++) if (alive[a4]) frzNow += Ss[a4].freeze;
+    frzNow = Math.min(0.6, frzNow * C.freezeF);
+    var entry = { t: t, dmg: total, heal: 0, rem: Math.max(0, rem), frz: frzNow, pool: [], hp: [], alive: [], ev: ev };
+    for (var e5 = 0; e5 < 6; e5++) entry.pool.push(pool[e5] + (e5 === main ? heartPool : 0));
+    if (rem <= 0) {
+      tkill = k + remBefore / Math.max(total, 1e-9);
+      ev.push('Victoire');
+      entry.hp = hp.slice(); entry.alive = alive.slice(); log.push(entry); break;
+    }
+    // soins
+    var healed = 0;
+    for (var j8 = 0; j8 < n; j8++) if (alive[j8]) {
+      var before = hp[j8]; hp[j8] = Math.min(maxhp[j8], hp[j8] + (healAll + healSelf[j8]) * b); healed += hp[j8] - before;
+    }
+    if (healSingle > 0) {
+      var w = -1, wr = 9; for (var j9 = 0; j9 < n; j9++) if (alive[j9] && hp[j9] / maxhp[j9] < wr) { wr = hp[j9] / maxhp[j9]; w = j9; }
+      if (w >= 0) { var bf = hp[w]; hp[w] = Math.min(maxhp[w], hp[w] + healSingle * b); healed += hp[w] - bf; }
+    }
+    entry.heal = healed;
+    for (var j10 = 0; j10 < n; j10++) if (alive[j10]) {
+      var add = Ss[j10].maxhp[kk] - (kk > 0 ? Ss[j10].maxhp[kk - 1] : 0);
+      if (add) for (var i3 = 0; i3 < n; i3++) if (alive[i3]) { maxhp[i3] += add / 4; hp[i3] += add / 4; }
+    }
+    if (t === 8) for (var j11 = 0; j11 < n; j11++) if (alive[j11] && Ss[j11].life8) { maxhp[j11] *= 2; hp[j11] *= 2; ev.push(cards[j11].name + ': PV doublés'); }
+    // Chouette: la moitié de ses coups touche tes cartes
+    for (var j12 = 0; j12 < n; j12++) if (alive[j12] && Ss[j12].selfhit) {
+      var selfD = dmgC[j12] * b, cnt = 0; for (var i4 = 0; i4 < n; i4++) if (alive[i4]) cnt++;
+      for (var i5 = 0; i5 < n; i5++) if (alive[i5]) hp[i5] = Math.max(1, hp[i5] - selfD / cnt * (1 - res[i5]));
+    }
+    // tour adverse
+    var efrac = Math.sqrt(Math.max(0.25, rem / EHP));
+    var inc = curve[Math.min(t, T) - 1] * C.enemyF / 100 * efrac * (1 - frzNow);
+    var tu = 0; for (var j13 = 0; j13 < n; j13++) if (alive[j13]) tu += Ss[j13].taunt;
+    var tshare = Math.min(1, tu);
+    var split = new Float64Array(n);
+    if (tshare > 0) for (var j14 = 0; j14 < n; j14++) if (alive[j14]) split[j14] += inc * tshare * Ss[j14].taunt / tu;
+    var target = -1, tv = -1;
+    for (var j15 = 0; j15 < n; j15++) if (alive[j15] && dmgC[j15] + 1e-3 * hp[j15] > tv) { tv = dmgC[j15] + 1e-3 * hp[j15]; target = j15; }
+    split[target] += inc * (1 - tshare);
+    var order = [target]; var rest = []; for (var j16 = 0; j16 < n; j16++) if (j16 !== target) rest.push(j16);
+    rest.sort(function (x, y) { return dmgC[y] - dmgC[x]; }); order = order.concat(rest);
+    var overflow = 0;
+    for (var oi = 0; oi < order.length; oi++) {
+      var jj = order[oi]; if (!alive[jj]) continue;
+      var dj = (split[jj] + overflow) * (1 - res[jj]); overflow = 0;
+      if (dj >= hp[jj]) {
+        overflow = (dj - hp[jj]) / (1 - res[jj]); hp[jj] = 0; alive[jj] = false;
+        ev.push(cards[jj].name + ' meurt');
+        addDeathBonus();
+        if (Ss[jj].bomba) { rem -= Ss[jj].bomba; ev.push('Bomba: ' + Ss[jj].bomba + ' dégâts'); }
+      } else hp[jj] -= dj;
+    }
+    entry.hp = hp.slice(); entry.alive = alive.slice(); entry.inc = inc;
+    log.push(entry);
+    if (!alive.some(function (x) { return x; })) { tdie = t; ev.push('Défaite'); break; }
+  }
+  var score;
+  if (tkill != null) { var fr = 0; for (var j17 = 0; j17 < n; j17++) if (alive[j17]) fr += hp[j17] / maxhp[j17]; score = 1 + fr / 4 - 0.02 * tkill; }
+  else score = 1 - Math.max(0, rem) / EHP;
+  var out = { score: score, tkill: tkill, tdie: tdie, multTurn: multTurn, hearts: nh, main: EL[main] };
+  if (wantLog) { out.log = log; out.maxhp = maxhp; }
+  return out;
+}
+
+/* Scénarios: chaque règle "?" pertinente pour le deck est testée dans les deux sens */
+var BOOL_RULES = ['healScale', 'sharedPool', 'gabrielOnce', 'faunaAllyFreeze', 'owlAllies', 'berserkStack', 'cavalryStack', 'freezeFull'];
+function relevantUnknowns(R, cards, Ss) {
+  var out = [];
+  var has = function (f) { return cards.some(f); };
+  var heals = Ss.some(function (s) { for (var i = 0; i < 6 * T; i++) if (s.hAll[i] || s.hSingle[i] || s.hSelf[i]) return true; return false; });
+  var ownGen = Ss.some(function (s) { for (var i = 0; i < 6 * T; i++) if (s.genOwn[i]) return true; return false; });
+  var cnt = function (f) { return Ss.filter(f).length; };
+  if (R.healScale === '?' && heals) out.push('healScale');
+  if (R.sharedPool === '?' && ownGen) out.push('sharedPool');
+  if (R.gabrielOnce === '?' && has(function (c) { return (c.abil || []).some(function (a) { return a.gabriel; }); })) out.push('gabrielOnce');
+  if (R.faunaAllyFreeze === '?' && has(function (c) { return (c.abil || []).some(function (a) { return a.ally_freeze; }); })) out.push('faunaAllyFreeze');
+  if (R.owlAllies === '?' && has(function (c) { return c.selfhit; })) out.push('owlAllies');
+  if (R.berserkStack === '?' && cnt(function (s) { return s.berserk > 0; }) > 1) out.push('berserkStack');
+  if (R.cavalryStack === '?' && cnt(function (s) { return s.cavalry > 0; }) > 1) out.push('cavalryStack');
+  if (R.freezeFull === '?' && Ss.some(function (s) { return s.freeze > 0; })) out.push('freezeFull');
+  return out;
+}
+function concreteRules(R, assign) {
+  var C = Object.assign({}, R);
+  var v = function (key, dflt) { var x = assign && key in assign ? assign[key] : R[key]; return x === '?' ? dflt : x; };
+  C.healScale = v('healScale', true) ? 1 : 0;
+  C.sharedPool = v('sharedPool', true);
+  C.gabrielOnce = v('gabrielOnce', true);
+  C.faunaAllyFreeze = v('faunaAllyFreeze', false);
+  C.owlAllies = v('owlAllies', true);
+  C.berserkStack = v('berserkStack', true);
+  C.cavalryStack = v('cavalryStack', true);
+  var f = v('freezeFull', true);
+  C.freezeF = f === 'partiel' ? 0.5 : (f ? 1 : 0);
+  return C;
+}
+function scenarioList(unknowns, cap) {
+  var list = [{}];
+  unknowns.forEach(function (u) {
+    var nxt = [];
+    list.forEach(function (sc) {
+      var a = Object.assign({}, sc); a[u] = true; nxt.push(a);
+      var b2 = Object.assign({}, sc); b2[u] = u === 'freezeFull' ? 'partiel' : false; nxt.push(b2);
+    });
+    list = nxt;
+  });
+  if (cap && list.length > cap) {
+    var step = list.length / cap, out = [];
+    for (var i = 0; i < cap; i++) out.push(list[Math.floor(i * step)]);
+    list = out;
+  }
+  return list;
+}
+
+/* Cache des séries par carte/talent/règles */
+function seriesKey(card, ti, C) { return card.id + '|' + ti + '|' + C.aoeTargets + '|' + C.gabrielOnce + '|' + C.faunaAllyFreeze + '|' + C.owlAllies + '|' + (card._v || 0); }
+var SERIES_CACHE = new Map();
+function getSeries(card, ti, C) {
+  var key = seriesKey(card, ti, C);
+  var s = SERIES_CACHE.get(key);
+  if (!s) { s = cardSeries(card, ti, C); SERIES_CACHE.set(key, s); }
+  return s;
+}
+
+/* Test complet d'un deck dans tous les scénarios pertinents */
+function testDeck(cards, tals, multK, R, curve, cap, wantLog) {
+  var C0 = concreteRules(R, {});
+  var Ss0 = cards.map(function (c, i) { return getSeries(c, tals[i], C0); });
+  var unk = relevantUnknowns(R, cards, Ss0);
+  var scen = scenarioList(unk, cap || 64);
+  var results = scen.map(function (a) {
+    var C = concreteRules(R, a);
+    var Ss = cards.map(function (c, i) { return getSeries(c, tals[i], C); });
+    var r = simDetail(cards, Ss, multK, C, curve, wantLog);
+    r.assign = a;
+    return r;
+  });
+  var wins = results.filter(function (r) { return r.tkill != null; }).length;
+  var avg = results.reduce(function (s, r) { return s + r.score; }, 0) / results.length;
+  var worst = Math.min.apply(null, results.map(function (r) { return r.score; }));
+  return { results: results, unknowns: unk, wins: wins, total: results.length, avg: avg, worst: worst };
+}
+
+</script>
+<script id="workersrc" type="text/plain">
+/* ===== Worker de recherche ===== */
+/* Version pré-calculée (paires) pour parcourir les ~4 millions de decks vite */
+function prepFast(S, M) {
+  var n = S.length, pt = M.pt / 100, hs = M.healScale;
+  var P = { n: n, pairD: new Float32Array(n * n * T), pairH: new Float32Array(n * n * T), selfD: new Float32Array(n * T), selfH: new Float32Array(n * T),
+    cMain: new Float32Array(n * 6 * T), hMain: new Float32Array(n * 6 * T), sumC: new Float32Array(n * T), sumH: new Float32Array(n * T),
+    w9: new Float32Array(n * 6), spam: new Float32Array(n), bers: new Float32Array(n), gy: new Float32Array(n), res: new Float32Array(n), shared: new Float32Array(n),
+    frz: new Float32Array(n), hp: new Float32Array(n), cav: new Float32Array(n), soul: new Float32Array(n), life8: new Float32Array(n), hpct: new Float32Array(n),
+    maxhp: new Float32Array(n * T), extra: new Float32Array(n * T) };
+  for (var j = 0; j < n; j++) {
+    var s = S[j], mf = s.nativeMult ? 2 : 1;
+    for (var k = 0; k < T; k++) {
+      var sd = 0, sh = 0;
+      for (var e = 0; e < 6; e++) {
+        var idx = e * T + k, hv = s.hAll[idx] * 4 + s.hSingle[idx] + s.hSelf[idx];
+        sd += s.coef[idx]; sh += hv;
+        P.cMain[(j * 6 + e) * T + k] = pt * mf * s.coef[idx];
+        P.hMain[(j * 6 + e) * T + k] = pt * mf * hs * hv;
+      }
+      P.selfD[j * T + k] = sd; P.selfH[j * T + k] = sh;
+      P.sumC[j * T + k] = pt * mf * sd; P.sumH[j * T + k] = pt * mf * hs * sh;
+      P.maxhp[j * T + k] = s.maxhp[k];
+    }
+    for (var e2 = 0; e2 < 6; e2++) P.w9[j * 6 + e2] = s.coef[e2 * T + 9];
+    P.spam[j] = s.spam; P.bers[j] = s.berserk; P.gy[j] = s.graveyard; P.res[j] = s.res; P.shared[j] = s.shared; P.frz[j] = s.freeze;
+    P.hp[j] = s.hp; P.cav[j] = s.cavalry; P.soul[j] = s.soulvit; P.life8[j] = s.life8 ? s.hp : 0; P.hpct[j] = s.healPct * s.hp;
+    if (s.instakill) for (var t0 = 1; t0 <= T; t0 += s.instakill) P.extra[j * T + t0 - 1] += 800;
+    if (s.bomba) P.extra[j * T + 5] += s.bomba;
+    for (var i = 0; i < n; i++) {
+      var g = S[i], mf2 = s.nativeMult ? 2 : 1;
+      for (var k2 = 0; k2 < T; k2++) {
+        var d = g.critAcc[k2] * s.kcrit[k2] + g.baseAcc[k2] * s.inst[k2], h = 0;
+        for (var e3 = 0; e3 < 6; e3++) {
+          var id = e3 * T + k2;
+          var G = g.genTeam[id] + ((M.sharedPool || i === j) ? g.genOwn[id] : 0);
+          if (!G) continue;
+          d += pt * mf2 * s.coef[id] * G;
+          h += pt * mf2 * hs * (s.hAll[id] * 4 + s.hSingle[id] + s.hSelf[id]) * G;
+        }
+        P.pairD[(j * n + i) * T + k2] = d; P.pairH[(j * n + i) * T + k2] = h;
+      }
+    }
+  }
+  return P;
+}
+var _dmg = new Float64Array(T), _heal = new Float64Array(T), _hpool = new Float64Array(T);
+var DEATHS = []; for (var _t = 1; _t <= T; _t++) DEATHS.push(deathsBy(_t));
+function evalFast(P, ids, M, curve, wantDmg) {
+  var n = P.n, i, j, k;
+  var spam = 0, bs = 0, bmx = 0, gy = 0;
+  var w = [0, 0, 0, 0, 0, 0];
+  for (i = 0; i < 4; i++) { var a = ids[i]; spam += P.spam[a]; bs += P.bers[a]; if (P.bers[a] > bmx) bmx = P.bers[a]; gy += P.gy[a]; for (var e = 0; e < 6; e++) w[e] += P.w9[a * 6 + e]; }
+  var main = 0; for (var e1 = 1; e1 < 6; e1++) if (w[e1] > w[main]) main = e1;
+  var bank = 0, nb = 0, hp_ = 0;
+  for (k = 0; k < T; k++) {
+    var t = k + 1; bank += spam;
+    hp_ += M.heartGain * nb;
+    if (t >= M.heartFrom && bank >= M.heartCost && nb < M.hearts) { bank -= M.heartCost; nb++; }
+    _hpool[k] = hp_;
+  }
+  var bm = 1 + (M.berserkStack ? bs : bmx);
+  for (k = 0; k < T; k++) {
+    var d = 0, h = 0, dg = DEATHS[k] * gy;
+    for (j = 0; j < 4; j++) {
+      var a2 = ids[j], o = a2 * T + k;
+      d += P.selfD[o] + _hpool[k] * P.cMain[(a2 * 6 + main) * T + k] + dg * P.sumC[o] + P.extra[o] / bm;
+      h += P.selfH[o] + _hpool[k] * P.hMain[(a2 * 6 + main) * T + k] + dg * P.sumH[o];
+      var base = a2 * n;
+      for (i = 0; i < 4; i++) { var p = (base + ids[i]) * T + k; d += P.pairD[p]; h += P.pairH[p]; }
+    }
+    _dmg[k] = d * bm; _heal[k] = h * bm;
+  }
+  if (wantDmg) return Array.from(_dmg);
+  var EHP = M.enemyEHP, cum = 0, tkill = -1;
+  for (k = 0; k < T; k++) { if (cum + _dmg[k] >= EHP) { tkill = k + (EHP - cum) / Math.max(_dmg[k], 1e-9); break; } cum += _dmg[k]; }
+  if (tkill < 0) tkill = T + (EHP - cum) / Math.max(_dmg[T - 1], 1e-9);
+  var resS = 0, shS = 0, frz = 0, hp0 = 0, cavS = 0, cavM = 0, soul = 0, life8 = 0, hpct = 0;
+  for (i = 0; i < 4; i++) { var b = ids[i]; resS += P.res[b]; shS += P.shared[b]; frz += P.frz[b]; hp0 += P.hp[b]; cavS += P.cav[b]; if (P.cav[b] > cavM) cavM = P.cav[b]; soul += P.soul[b]; life8 += P.life8[b]; hpct += P.hpct[b]; }
+  var res = Math.min(0.6, resS / 4 + shS); frz = Math.min(0.6, frz * M.freezeF); hp0 += (M.cavalryStack ? cavS : cavM) * 3;
+  var taken = 0, tdie = T + 5;
+  for (k = 0; k < T; k++) {
+    var mh = P.maxhp[ids[0] * T + k] + P.maxhp[ids[1] * T + k] + P.maxhp[ids[2] * T + k] + P.maxhp[ids[3] * T + k];
+    var ehp = (hp0 + soul * DEATHS[k] + mh + (k >= 7 ? life8 : 0)) / (1 - res);
+    var inc = curve[k] * M.enemyF / 100 * (1 - frz), hh = (_heal[k] + hpct) / (1 - res);
+    var nw = taken + inc - hh; if (nw < 0) nw = 0;
+    if (nw >= ehp) { tdie = k + Math.max(0, Math.min(1, (ehp - taken) / Math.max(inc - hh, 1e-9))); break; }
+    taken = nw;
+  }
+  _lastTkill = tkill;
+  return tdie / tkill;
+}
+var _lastTkill = 0;
+
+function topInsert(arr, item, K, key) {
+  if (arr.length < K) { arr.push(item); if (arr.length === K) arr.sort(function (a, b) { return key(a) - key(b); }); return; }
+  if (key(item) <= key(arr[0])) return;
+  // arr trié croissant: on remplace le plus petit et on réinsère
+  arr[0] = item;
+  var i = 0;
+  while (i + 1 < arr.length && key(arr[i]) > key(arr[i + 1])) { var tmp = arr[i]; arr[i] = arr[i + 1]; arr[i + 1] = tmp; i++; }
+}
+function runSearch(msg) {
+  var cards = msg.cards, R = msg.rules, curve = msg.curve.slice(), opts = msg.opts || {};
+  var M = midRules(R);
+  var n = cards.length;
+  var S = cards.map(function (c) { return cardSeries(c, c.pref || 0, M); });
+  var P = prepFast(S, M);
+  var must = (opts.must || []).map(function (id) { return cards.findIndex(function (c) { return c.id === id; }); }).filter(function (i) { return i >= 0; });
+  var total = 0;
+  for (var a = 0; a < n; a++) for (var b = a + 1; b < n; b++) for (var c = b + 1; c < n; c++) total += n - c - 1;
+  var topS = [], topF = [], done = 0, lastPost = 0, t0 = Date.now();
+  var keyS = function (x) { return x.score; }, keyF = function (x) { return -x.tkill; };
+  var deck = [null, null, null, null];
+  for (var i = 0; i < n; i++) {
+    deck[0] = S[i];
+    for (var j = i + 1; j < n; j++) {
+      deck[1] = S[j];
+      for (var k = j + 1; k < n; k++) {
+        deck[2] = S[k];
+        for (var l = k + 1; l < n; l++) {
+          done++;
+          if (must.length) {
+            var ok = true;
+            for (var q = 0; q < must.length; q++) { var mm = must[q]; if (mm !== i && mm !== j && mm !== k && mm !== l) { ok = false; break; } }
+            if (!ok) continue;
+          }
+          var ids4 = [i, j, k, l];
+          var sc = evalFast(P, ids4, M, curve, false);
+          var item = { ids: ids4, score: sc, tkill: _lastTkill };
+          topInsert(topS, item, 300, keyS);
+          topInsert(topF, item, 1000, keyF);
+        }
+      }
+      if (done - lastPost > 150000) { lastPost = done; postMessage({ type: 'progress', phase: 'Toutes les combinaisons', done: done, total: total }); }
+    }
+  }
+  postMessage({ type: 'progress', phase: 'Toutes les combinaisons', done: total, total: total });
+  // recalibrage de l'adversaire: moyenne des 1000 decks les plus rapides
+  var newCurve = null;
+  if (opts.recalibrate && topF.length) {
+    newCurve = new Array(T).fill(0);
+    topF.forEach(function (it) {
+      var d = evalFast(P, it.ids, M, curve, true);
+      for (var t = 0; t < T; t++) newCurve[t] += d[t] / topF.length;
+    });
+    curve = newCurve.map(function (v) { return Math.round(v * 10) / 10; });
+  }
+  // stade 2: simulation détaillée sur les candidats
+  var seen = {}, cand = [];
+  topS.concat(topF.slice().sort(function (x, y) { return x.tkill - y.tkill; }).slice(0, 250)).forEach(function (it) {
+    var key = it.ids.join(','); if (!seen[key]) { seen[key] = 1; cand.push(it.ids); }
+  });
+  var res = [];
+  cand.forEach(function (ids, idx) {
+    var cs = ids.map(function (x) { return cards[x]; });
+    var tals = cs.map(function (c) { return c.pref || 0; });
+    var best = null;
+    [0, 1, 2, 3, null].forEach(function (mk) {
+      var tr = testDeck(cs, tals, mk, R, curve, 8, false);
+      if (!best || tr.avg > best.avg) best = { avg: tr.avg, worst: tr.worst, wins: tr.wins, total: tr.total, mult: mk, results: tr.results };
+    });
+    res.push({ ids: ids, tals: tals, best: best });
+    if (idx % 40 === 0) postMessage({ type: 'progress', phase: 'Simulation détaillée', done: idx, total: cand.length });
+  });
+  res.sort(function (x, y) { return y.best.avg - x.best.avg; });
+  // affinage des talents sur les 25 meilleurs
+  var top = res.slice(0, 25);
+  top.forEach(function (d, idx) {
+    var cs = d.ids.map(function (x) { return cards[x]; });
+    for (var pass = 0; pass < 2; pass++) {
+      for (var p = 0; p < 4; p++) {
+        for (var ti = 0; ti < cs[p].talents.length; ti++) {
+          if (ti === d.tals[p]) continue;
+          var tals = d.tals.slice(); tals[p] = ti;
+          [0, 1, 2, 3, null].forEach(function (mk) {
+            var tr = testDeck(cs, tals, mk, R, curve, 8, false);
+            if (tr.avg > d.best.avg + 1e-9) { d.tals = tals; d.best = { avg: tr.avg, worst: tr.worst, wins: tr.wins, total: tr.total, mult: mk, results: tr.results }; }
+          });
+        }
+      }
+    }
+    postMessage({ type: 'progress', phase: 'Choix des talents', done: idx + 1, total: top.length });
+  });
+  top.sort(function (x, y) { return y.best.avg - x.best.avg; });
+  var out = top.map(function (d) {
+    var kills = d.best.results.filter(function (r) { return r.tkill != null; }).map(function (r) { return r.tkill; }).sort(function (a, b) { return a - b; });
+    return {
+      ids: d.ids.map(function (x) { return cards[x].id; }), tals: d.tals, mult: d.best.mult,
+      avg: d.best.avg, worst: d.best.worst, wins: d.best.wins, total: d.best.total,
+      kill: kills.length ? kills[Math.floor(kills.length / 2)] : null
+    };
+  });
+  postMessage({ type: 'done', results: out, curve: newCurve ? curve : null, ms: Date.now() - t0, decks: total });
+}
+self.onmessage = function (ev) { if (ev.data && ev.data.type === 'search') { try { runSearch(ev.data); } catch (e) { postMessage({ type: 'error', message: String(e && e.stack || e) }); } } };
+
+</script>
+<script>
+(function () {
+'use strict';
+var BASE = JSON.parse(document.getElementById('data').textContent);
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+var fmt = function (x, d) { return x == null || isNaN(x) ? '–' : Number(x).toFixed(d == null ? 0 : d); };
+var clone = function (o) { return JSON.parse(JSON.stringify(o)); };
+
+/* ---------- Règles ---------- */
+var RULES = [
+  { id: 'healScale', q: "Les bonus d'élément augmentent-ils aussi les soins de cet élément ?", help: "Exemple : avec +20 en Nature, un soin Nature est-il multiplié par 3 ?", opts: [[true, 'Oui'], [false, 'Non'], ['?', 'Je ne sais pas']] },
+  { id: 'sharedPool', q: "Un bonus d'élément gagné par une carte profite-t-il à toutes tes cartes ?", help: "Exemple : quand Scorch donne +3 Eau, le Maître Amphibien en profite-t-il ? Les Cœurs (Tox) profitent toujours à toute l'équipe.", opts: [[true, 'Oui, à toutes'], [false, 'Non, seulement à elle'], ['?', 'Je ne sais pas']] },
+  { id: 'freezeFull', q: "Une carte gelée perd-elle tout son tour suivant ?", help: "Le Gel de Frost & Glacier, de l'Esprit de la Faune, de Meridia, etc.", opts: [[true, 'Oui'], ['partiel', 'En partie'], [false, 'Non'], ['?', 'Je ne sais pas']] },
+  { id: 'faunaAllyFreeze', q: "Soin soleil (Esprit de la Faune) gèle-t-il ta propre carte quand il la soigne ?", help: "Si oui, le simulateur n'utilise pas ce soin.", opts: [[true, 'Oui'], [false, 'Non'], ['?', 'Je ne sais pas']] },
+  { id: 'gabrielOnce', q: "Cocon, Chenille et Papillon (Gabriel) ne s'utilisent-ils qu'une fois par partie ?", help: "Metabot indique « usage 1/1 ». Si oui, le simulateur les place aux tours 3, 6 et 9.", opts: [[true, 'Oui'], [false, 'Non, en boucle'], ['?', 'Je ne sais pas']] },
+  { id: 'owlAllies', q: "Danse des plumes (Chouette Polychrome) touche-t-elle aussi tes cartes ?", help: "Si oui, la moitié des coups tombe sur ton équipe et la Chouette est exclue de la recherche.", opts: [[true, 'Oui'], [false, 'Non'], ['?', 'Je ne sais pas']] },
+  { id: 'berserkStack', q: "Deux Berserk dans le même deck s'additionnent-ils ?", help: "Commando Gerz, L'Œil des Montagnes et le Sbire des Flammes démarrent avec Berserk.", opts: [[true, 'Oui'], [false, 'Non, seul le plus fort compte'], ['?', 'Je ne sais pas']] },
+  { id: 'cavalryStack', q: "Deux talents Cavalerie s'additionnent-ils ?", help: "+100 PV max aux autres cartes, par Cavalerie.", opts: [[true, 'Oui'], [false, 'Non'], ['?', 'Je ne sais pas']] }
+];
+var NUMS = [
+  { id: 'pt', label: "Effet d'un point de bonus d'élément", unit: '%', step: 1, d: 10 },
+  { id: 'aoeTargets', label: 'Cartes touchées en moyenne par une attaque de zone', unit: 'cartes', step: 0.1, d: 3.5 },
+  { id: 'enemyF', label: "Force de l'adversaire simulé", unit: '%', step: 5, d: 100 },
+  { id: 'enemyEHP', label: "PV totaux de l'adversaire (résistances comprises)", unit: 'PV', step: 100, d: 3600 },
+  { id: 'hearts', label: 'Cœurs achetés en boutique par partie', unit: '', step: 1, d: 3 },
+  { id: 'heartGain', label: "Bonus par tour d'un Cœur acheté (épique)", unit: '/tour', step: 1, d: 5 },
+  { id: 'heartCost', label: "Prix d'un Cœur", unit: 'Spamton', step: 5, d: 60 },
+  { id: 'heartFrom', label: 'Premier tour où tu achètes un Cœur', unit: 'tour', step: 1, d: 4 },
+  { id: 'multCost', label: 'Prix du Multiplicateur', unit: 'Spamton', step: 5, d: 100 },
+  { id: 'multFrom', label: 'Premier tour où le Multiplicateur apparaît', unit: 'tour', step: 1, d: 4 }
+];
+var DEFAULT_ANSWERS = { healScale: '?', sharedPool: '?', freezeFull: '?', faunaAllyFreeze: '?', gabrielOnce: true, owlAllies: true, berserkStack: '?', cavalryStack: '?' };
+var RULE_SHORT = {
+  healScale: [ 'soins boostés', 'soins non boostés' ], sharedPool: [ 'bonus partagés', 'bonus par carte' ],
+  freezeFull: [ 'gel total', 'gel partiel' ], faunaAllyFreeze: [ 'Soin soleil gèle', 'Soin soleil sûr' ],
+  gabrielOnce: [ 'Gabriel 1 fois', 'Gabriel en boucle' ], owlAllies: [ 'Chouette touche alliés', 'Chouette sûre' ],
+  berserkStack: [ 'Berserk cumulés', 'Berserk non cumulés' ], cavalryStack: [ 'Cavaleries cumulées', 'Cavaleries non cumulées' ]
+};
+
+/* ---------- État ---------- */
+var S = {
+  answers: clone(DEFAULT_ANSWERS), numbers: {}, ruleNotes: {}, ruleDates: {},
+  overrides: {}, infos: [], decks: [], curve: BASE.curve.slice(), curveAt: null, lastSearch: null,
+  tab: 'tester',
+  tester: { slots: [], mult: null, scen: 0 },
+  search: { running: false, phase: '', done: 0, total: 0, results: null, opts: { ownedOnly: true, must: [], recalibrate: true } },
+  cardSel: null, cardFilter: { q: '', el: '', mode: 'owned' }, draft: null
+};
+NUMS.forEach(function (n) { S.numbers[n.id] = n.d; });
+
+function rulesObj() { var R = Object.assign({}, S.answers, S.numbers); return R; }
+function allCards() {
+  var out = BASE.cards.map(function (c) { var o = S.overrides[c.id]; return o ? o : c; });
+  Object.keys(S.overrides).forEach(function (id) { if (!BASE.cards.some(function (c) { return c.id === id; })) out.push(S.overrides[id]); });
+  return out.filter(function (c) { return !c._deleted; });
+}
+function cardById(id) { return allCards().find(function (c) { return c.id === id; }); }
+
+/* ---------- Stockage (artefact si dispo, sinon cet appareil) ---------- */
+var DB = null;
+var LS_KEY = 'labo-spam-v1';
+function lsLoad() { try { var x = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); if (x) applyStored(x); } catch (e) {} }
+function lsSave() {
+  if (DB) return;
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ rules: { answers: S.answers, numbers: S.numbers, notes: S.ruleNotes, dates: S.ruleDates }, overrides: S.overrides, infos: S.infos, decks: S.decks, curve: { curve: S.curve, at: S.curveAt } })); } catch (e) {}
+}
+function applyStored(x) {
+  if (x.rules) { Object.assign(S.answers, x.rules.answers || {}); Object.assign(S.numbers, x.rules.numbers || {}); S.ruleNotes = x.rules.notes || {}; S.ruleDates = x.rules.dates || {}; }
+  if (x.overrides) S.overrides = x.overrides;
+  if (x.infos) S.infos = x.infos;
+  if (x.decks) S.decks = x.decks;
+  if (x.curve && x.curve.curve) { S.curve = x.curve.curve; S.curveAt = x.curve.at; }
+}
+function setSync(on, text) {
+  var el = $('#sync'); el.innerHTML = '<span class="dot' + (on ? ' on' : '') + '"></span><span>' + esc(text) + '</span>';
+}
+var writeQueue = {};
+function dbWrite(path, data) {
+  if (!DB) { lsSave(); return Promise.resolve(); }
+  var prev = writeQueue[path] || Promise.resolve();
+  var p = prev.then(function () { return DB.doc(path).set(data); }).catch(function (e) { toast("Enregistrement impossible : " + (e && e.message || e)); });
+  writeQueue[path] = p; return p;
+}
+function dbDelete(path) {
+  if (!DB) { lsSave(); return Promise.resolve(); }
+  return DB.doc(path).delete().catch(function () {});
+}
+function saveRules() {
+  dbWrite('config/rules', { answers: S.answers, numbers: S.numbers, notes: S.ruleNotes, dates: S.ruleDates, updatedAt: new Date().toISOString() });
+}
+lsLoad();
+var subscribed = false;
+if (window.claude && window.claude.use) {
+  window.claude.use('db').then(function (db) {
+    if (!db) { setSync(false, 'Enregistré sur cet appareil seulement'); return; }
+    DB = db; setSync(true, 'Enregistré dans l’artefact · Claude peut le lire');
+    if (subscribed) return; subscribed = true;
+    db.doc('config/rules').onSnapshot(function (s) {
+      if (s.exists) { var d = s.data(); S.answers = Object.assign(clone(DEFAULT_ANSWERS), d.answers || {}); NUMS.forEach(function (n) { S.numbers[n.id] = (d.numbers || {})[n.id] != null ? d.numbers[n.id] : n.d; }); S.ruleNotes = Object.assign({}, d.notes || {}); S.ruleDates = Object.assign({}, d.dates || {}); }
+      onDataChange('rules');
+    }, function () {});
+    db.doc('config/curve').onSnapshot(function (s) { if (s.exists && s.data().curve) { S.curve = s.data().curve.slice(); S.curveAt = s.data().at; } onDataChange('curve'); }, function () {});
+    db.doc('config/lastSearch').onSnapshot(function (s) { if (s.exists) S.lastSearch = s.data(); onDataChange('search'); }, function () {});
+    db.collection('cards').onSnapshot(function (q) {
+      var o = {}; q.docs.forEach(function (d) { var x = d.data(); if (x && x.card) { var c = clone(x.card); c._v = x.updatedAt || 1; o[d.id] = c; } });
+      S.overrides = o; onDataChange('cards');
+    }, function () {});
+    db.collection('infos').onSnapshot(function (q) {
+      S.infos = q.docs.map(function (d) { var x = d.data(); return { id: d.id, text: x.text, at: x.at, status: x.status || '' }; }).sort(function (a, b) { return (b.at || '').localeCompare(a.at || ''); });
+      onDataChange('infos');
+    }, function () {});
+    db.collection('decks').onSnapshot(function (q) {
+      S.decks = q.docs.map(function (d) { var x = d.data(); x.id = d.id; return x; }).sort(function (a, b) { return (b.at || '').localeCompare(a.at || ''); });
+      onDataChange('decks');
+    }, function () {});
+  });
+  setTimeout(function () { if (!DB) setSync(false, 'Enregistré sur cet appareil seulement'); }, 11000);
+} else setSync(false, 'Enregistré sur cet appareil seulement');
+
+var changeTimer = null;
+function onDataChange() {
+  clearTimeout(changeTimer);
+  changeTimer = setTimeout(function () {
+    SERIES_CACHE.clear();
+    updateSubline();
+    if (S.tab === 'tester') renderTester(true);
+    if (S.tab === 'rules') renderRules();
+    if (S.tab === 'cards' && !S.draftDirty) renderCards();
+    if (S.tab === 'search' && !S.search.running) renderSearch();
+  }, 120);
+}
+function toast(msg) { var t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(function () { t.hidden = true; }, 2600); }
+function updateSubline() {
+  var cs = allCards(), own = cs.filter(function (c) { return c.owned; }).length;
+  var known = RULES.filter(function (r) { return S.answers[r.id] !== '?'; }).length;
+  $('#subline').textContent = own + ' cartes possédées · ' + known + '/' + RULES.length + ' règles confirmées · ' + S.infos.length + ' info' + (S.infos.length > 1 ? 's' : '') + ' ajoutée' + (S.infos.length > 1 ? 's' : '');
+}
+
+/* ---------- Onglets ---------- */
+$('#tabs').addEventListener('click', function (e) {
+  var b = e.target.closest('button[data-tab]'); if (!b) return; showTab(b.dataset.tab);
+});
+function showTab(t) {
+  S.tab = t;
+  document.querySelectorAll('#tabs button').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.tab === t ? 'true' : 'false'); });
+  ['tester', 'search', 'cards', 'rules'].forEach(function (x) { $('#panel-' + x).hidden = x !== t; });
+  if (t === 'tester') renderTester(); if (t === 'search') renderSearch(); if (t === 'cards') renderCards(); if (t === 'rules') renderRules();
+  try { localStorage.setItem(LS_KEY + '-tab', t); } catch (e) {}
+}
+
+/* ---------- Petits composants ---------- */
+function elDot(e) { return '<span class="el" style="background:var(--' + e + ')" title="' + ELN[e] + '"></span>'; }
+function cardChip(c, extra) { return '<span class="chip">' + elDot(c.el) + esc(c.name) + (extra || '') + '</span>'; }
+function scenLabel(assign) {
+  var ks = Object.keys(assign || {}); if (!ks.length) return 'Règles confirmées';
+  return ks.map(function (k) { var v = assign[k]; return RULE_SHORT[k][v === true ? 0 : 1]; }).join(' · ');
+}
+function talentName(c, ti) { return (c.talents[ti] || {}).name || '–'; }
+
+/* ================= Onglet TESTER ================= */
+var DEFAULT_DECK = [['princesse-meridia'], ['frost-glacier'], ['lame-de-la-foret'], ['esprit-de-la-faune']];
+function initTester() {
+  if (S.tester.slots.length) return;
+  var saved = null; try { saved = JSON.parse(localStorage.getItem(LS_KEY + '-deck') || 'null'); } catch (e) {}
+  if (saved && saved.slots && saved.slots.length === 4) { S.tester.slots = saved.slots; S.tester.mult = saved.mult; return; }
+  S.tester.slots = DEFAULT_DECK.map(function (x) { var c = cardById(x[0]); return { id: x[0], ti: c ? c.pref || 0 : 0 }; });
+  S.tester.mult = 2;
+}
+function persistDeckLocal() { try { localStorage.setItem(LS_KEY + '-deck', JSON.stringify({ slots: S.tester.slots, mult: S.tester.mult })); } catch (e) {} }
+var lastTest = null;
+function runTest() {
+  var cs = S.tester.slots.map(function (s) { return cardById(s.id); });
+  if (cs.some(function (c) { return !c; })) { lastTest = null; return; }
+  var ids = cs.map(function (c) { return c.id; });
+  if (new Set(ids).size < 4) { lastTest = { error: 'Le deck contient deux fois la même carte.' }; return; }
+  var tals = S.tester.slots.map(function (s) { return s.ti; });
+  lastTest = testDeck(cs, tals, S.tester.mult, rulesObj(), S.curve, 64, true);
+  lastTest.cards = cs;
+  if (S.tester.scen >= lastTest.results.length) S.tester.scen = 0;
+}
+function renderTester(keepScroll) {
+  initTester(); runTest();
+  var cs = allCards().slice().sort(function (a, b) { return (b.owned - a.owned) || a.name.localeCompare(b.name, 'fr'); });
+  var opts = function (sel) {
+    return cs.map(function (c) { return '<option value="' + esc(c.id) + '"' + (c.id === sel ? ' selected' : '') + '>' + esc(c.name) + (c.owned ? '' : ' (pas possédée)') + '</option>'; }).join('');
+  };
+  var slotsHtml = S.tester.slots.map(function (s, i) {
+    var c = cardById(s.id) || cs[0];
+    var tal = c.talents.map(function (t, ti) { return '<option value="' + ti + '"' + (ti === s.ti ? ' selected' : '') + '>' + esc(t.name) + '</option>'; }).join('');
+    return '<div class="slot"><div class="stripe" style="background:var(--' + c.el + ')"></div><div class="inner">' +
+      '<label class="f"><span>Carte ' + (i + 1) + '</span><select id="slot-card-' + i + '" data-slot="' + i + '" data-k="card">' + opts(s.id) + '</select></label>' +
+      '<label class="f"><span>Talent</span><select id="slot-tal-' + i + '" data-slot="' + i + '" data-k="tal">' + tal + '</select></label>' +
+      '<label class="mult"><input type="radio" name="mult" id="mult-' + i + '" value="' + i + '"' + (S.tester.mult === i ? ' checked' : '') + '> Multiplicateur sur cette carte</label>' +
+      '</div></div>';
+  }).join('');
+  var decksHtml = S.decks.length ? S.decks.map(function (d) {
+    var names = (d.ids || []).map(function (id) { var c = cardById(id); return c ? cardChip(c) : '<span class="chip">' + esc(id) + '</span>'; }).join(' ');
+    return '<div class="stack" style="gap:6px;padding:8px 0;border-bottom:1px solid var(--line)"><div class="row"><b>' + esc(d.name || 'Deck') + '</b><span class="muted small">' + esc((d.at || '').slice(0, 10)) + '</span></div><div class="row">' + names + '</div>' +
+      '<div class="row"><button class="btn" data-loaddeck="' + esc(d.id) + '">Charger</button><button class="btn ghost danger" data-deldeck="' + esc(d.id) + '">Supprimer</button></div></div>';
+  }).join('') : '<p class="muted small">Aucun deck enregistré. Donne un nom à ton deck et enregistre-le pour le retrouver ici.</p>';
+  var p = $('#panel-tester');
+  var sy = window.scrollY;
+  p.innerHTML = '<div class="grid2">' +
+    '<div class="stack">' +
+      '<div class="box stack"><h2>Ton deck</h2>' + slotsHtml +
+      '<label class="mult"><input type="radio" name="mult" id="mult-none" value="none"' + (S.tester.mult == null ? ' checked' : '') + '> Pas de Multiplicateur</label>' +
+      '<div class="row"><input type="text" id="deckname" placeholder="Nom du deck" style="flex:1"><button class="btn" id="savedeck">Enregistrer</button></div></div>' +
+      '<div class="box"><h3>Decks enregistrés</h3>' + decksHtml + '</div>' +
+    '</div>' +
+    '<div class="stack" id="testres">' + testResultsHtml() + '</div>' +
+  '</div>';
+  if (keepScroll) window.scrollTo(0, sy);
+}
+function testResultsHtml() {
+  if (!lastTest) return '<div class="box">Choisis 4 cartes.</div>';
+  if (lastTest.error) return '<div class="box bad">' + esc(lastTest.error) + '</div>';
+  var T_ = lastTest, w = T_.wins, n = T_.total;
+  var kills = T_.results.filter(function (r) { return r.tkill != null; }).map(function (r) { return r.tkill; }).sort(function (a, b) { return a - b; });
+  var med = kills.length ? kills[Math.floor(kills.length / 2)] : null;
+  var cls = w === n ? 'good' : (w === 0 ? 'bad' : 'warn');
+  var unkTxt = T_.unknowns.length ? 'Règles encore inconnues pour ce deck : ' + T_.unknowns.map(function (u) { return '<b>' + esc(RULES.find(function (r) { return r.id === u; }).q.replace(/ \?$/, '')) + '</b>'; }).join(' ; ') + '. Chaque combinaison est simulée. Réponds dans « Règles et infos » pour affiner.' : 'Toutes les règles qui comptent pour ce deck sont confirmées.';
+  var owl = T_.cards.some(function (c) { return c.selfhit; }) && S.answers.owlAllies === true ? '<div class="note">La Chouette touche aussi tes cartes : la moitié de ses dégâts est appliquée à ton équipe.</div>' : '';
+  var scenHtml = T_.results.map(function (r, i) {
+    var ok = r.tkill != null;
+    return '<button data-scen="' + i + '" aria-pressed="' + (i === S.tester.scen) + '"><b class="' + (ok ? 'good' : 'bad') + '">' + (ok ? 'Victoire T' + fmt(r.tkill, 1) : 'Défaite T' + (r.tdie || '20+')) + '</b><span class="muted">' + esc(scenLabel(r.assign)) + '</span></button>';
+  }).join('');
+  var R0 = T_.results[S.tester.scen];
+  return '<div class="box stack"><div class="verdict"><div><div class="big ' + cls + '">' + w + '/' + n + '</div><div class="small muted">scénarios gagnés</div></div>' +
+    '<div><div class="big">' + (med ? 'T' + fmt(med, 1) : '–') + '</div><div class="small muted">tour du kill (médiane)</div></div>' +
+    '<div><div class="big">' + fmt(T_.avg, 2) + '</div><div class="small muted">score moyen (&gt;1 = victoire)</div></div></div>' +
+    '<p class="small muted" style="margin:0">' + unkTxt + '</p>' + owl +
+    '<div class="scen">' + scenHtml + '</div></div>' +
+    detailHtml(R0, T_.cards);
+}
+function detailHtml(r, cards) {
+  if (!r || !r.log) return '';
+  var log = r.log, maxHp = r.maxhp;
+  // graphe: PV adverses restants vs PV de ton équipe (en %)
+  var W = 640, H = 220, padL = 34, padR = 10, padT = 12, padB = 24;
+  var nT = Math.max(log.length, 2);
+  var x = function (i) { return padL + (W - padL - padR) * (i) / (nT - 1 || 1); };
+  var y = function (v) { return padT + (H - padT - padB) * (1 - v); };
+  var EHP = S.numbers.enemyEHP;
+  var teamMax = log.map(function (e) { return 1; });
+  var initTeam = cards.reduce(function (s, c, j) { return s + (log[0] && log[0].hp && log[0].hp.length ? 0 : 0); }, 0);
+  var team = log.map(function (e) { var s = 0, m = 0; for (var j = 0; j < 4; j++) { s += Math.max(0, e.hp[j] || 0); m += maxHp[j]; } return m ? s / m : 0; });
+  var enemy = log.map(function (e) { return Math.max(0, e.rem / EHP); });
+  var path = function (arr) { return arr.map(function (v, i) { return (i ? 'L' : 'M') + x(i).toFixed(1) + ' ' + y(Math.min(1, v)).toFixed(1); }).join(' '); };
+  var grid = [0, .25, .5, .75, 1].map(function (g) { return '<line x1="' + padL + '" x2="' + (W - padR) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="var(--line)" stroke-width="1"/><text x="' + (padL - 6) + '" y="' + (y(g) + 3) + '" text-anchor="end">' + (g * 100) + '%</text>'; }).join('');
+  var xt = log.map(function (e, i) { return (log.length <= 12 || i % 2 === 0) ? '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle">T' + e.t + '</text>' : ''; }).join('');
+  var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="PV restants par tour">' + grid + xt +
+    '<path d="' + path(enemy) + '" fill="none" stroke="var(--bad)" stroke-width="2.5"/>' +
+    '<path d="' + path(team) + '" fill="none" stroke="var(--good)" stroke-width="2.5"/>' +
+    '<circle cx="' + x(log.length - 1) + '" cy="' + y(Math.min(1, enemy[enemy.length - 1])) + '" r="3.5" fill="var(--bad)"/>' +
+    '<circle cx="' + x(log.length - 1) + '" cy="' + y(Math.min(1, team[team.length - 1])) + '" r="3.5" fill="var(--good)"/></svg>';
+  var last = log[log.length - 1];
+  var pools = last.pool.map(function (v, i) { return v > 0.5 ? '<span class="chip">' + elDot(EL[i]) + ELN[EL[i]] + ' +' + fmt(v) + '</span>' : ''; }).join('') || '<span class="muted small">Aucun bonus accumulé</span>';
+  var head = '<tr><th>Tour</th><th class="num">Dégâts</th><th class="num">Soins</th><th class="num">Gel adv.</th><th class="num">PV adv.</th>' + cards.map(function (c) { return '<th>' + esc(c.name) + '</th>'; }).join('') + '<th>Événements</th></tr>';
+  var rows = log.map(function (e) {
+    var hpCells = cards.map(function (c, j) {
+      var v = e.hp[j], m = maxHp[j] || 1, dead = e.alive && e.alive[j] === false;
+      return '<td>' + (dead ? '<span class="bad small">morte</span>' : '<div class="small">' + fmt(v) + '</div><div class="hpbar"><i style="width:' + Math.max(0, Math.min(100, v / m * 100)) + '%;background:var(--' + c.el + ')"></i></div>') + '</td>';
+    }).join('');
+    return '<tr><td>T' + e.t + '</td><td class="num">' + fmt(e.dmg) + '</td><td class="num">' + fmt(e.heal) + '</td><td class="num">' + fmt(e.frz * 100) + '%</td><td class="num">' + fmt(e.rem) + '</td>' + hpCells + '<td class="small">' + esc((e.ev || []).join(' · ')) + '</td></tr>';
+  }).join('');
+  var sum = r.tkill != null ? '<span class="good"><b>Victoire au tour ' + fmt(r.tkill, 1) + '</b></span>' : '<span class="bad"><b>Défaite au tour ' + (r.tdie || '20+') + '</b></span>';
+  return '<div class="box stack"><div class="row" style="justify-content:space-between"><h3>Partie simulée · ' + esc(scenLabel(r.assign)) + '</h3>' + sum + '</div>' +
+    '<div class="legend"><span><i class="sw" style="background:var(--bad)"></i>PV de l’adversaire</span><span><i class="sw" style="background:var(--good)"></i>PV de ton équipe</span>' +
+    (r.multTurn ? '<span>Multiplicateur acheté au tour ' + r.multTurn + '</span>' : '') + '<span>' + r.hearts + ' Cœur(s) ' + ELN[r.main] + '</span></div>' +
+    '<div class="chart">' + svg + '</div>' +
+    '<div><div class="small muted" style="margin-bottom:6px">Bonus d’éléments à la fin</div><div class="pools">' + pools + '</div></div>' +
+    '<div class="tablewrap"><table><thead>' + head + '</thead><tbody>' + rows + '</tbody></table></div></div>';
+}
+$('#panel-tester').addEventListener('change', function (e) {
+  var t = e.target;
+  if (t.dataset.slot != null) {
+    var i = +t.dataset.slot;
+    if (t.dataset.k === 'card') { var c = cardById(t.value); S.tester.slots[i] = { id: t.value, ti: c ? c.pref || 0 : 0 }; }
+    else S.tester.slots[i].ti = +t.value;
+    S.tester.scen = 0; persistDeckLocal(); renderTester(true);
+  } else if (t.name === 'mult') {
+    S.tester.mult = t.value === 'none' ? null : +t.value; persistDeckLocal(); renderTester(true);
+  }
+});
+$('#panel-tester').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.scen != null) { S.tester.scen = +b.dataset.scen; $('#testres').innerHTML = testResultsHtml(); return; }
+  if (b.id === 'savedeck') {
+    var name = ($('#deckname').value || '').trim() || S.tester.slots.map(function (s) { var c = cardById(s.id); return c ? c.name.split(' ')[0] : s.id; }).join(' + ');
+    var d = { name: name, ids: S.tester.slots.map(function (s) { return s.id; }), talents: S.tester.slots.map(function (s) { return s.ti; }), mult: S.tester.mult, at: new Date().toISOString(),
+      result: lastTest && !lastTest.error ? { wins: lastTest.wins, total: lastTest.total, avg: Math.round(lastTest.avg * 1000) / 1000 } : null };
+    if (DB) DB.collection('decks').add(d).then(function () { toast('Deck enregistré'); }).catch(function (er) { toast('Enregistrement impossible : ' + (er && er.message || er)); });
+    else { d.id = 'd' + Date.now(); S.decks.unshift(d); lsSave(); renderTester(true); toast('Deck enregistré sur cet appareil'); }
+    return;
+  }
+  if (b.dataset.loaddeck) {
+    var dk = S.decks.find(function (x) { return x.id === b.dataset.loaddeck; }); if (!dk) return;
+    S.tester.slots = dk.ids.map(function (id, i) { return { id: id, ti: (dk.talents || [])[i] || 0 }; }); S.tester.mult = dk.mult == null ? null : dk.mult; S.tester.scen = 0;
+    persistDeckLocal(); renderTester(); toast('Deck chargé'); return;
+  }
+  if (b.dataset.deldeck) {
+    var id = b.dataset.deldeck;
+    if (DB) dbDelete('decks/' + id); else { S.decks = S.decks.filter(function (x) { return x.id !== id; }); lsSave(); renderTester(true); }
+    toast('Deck supprimé');
+  }
+});
+function loadDeckIntoTester(ids, tals, mult) {
+  S.tester.slots = ids.map(function (id, i) { return { id: id, ti: tals[i] || 0 }; }); S.tester.mult = mult; S.tester.scen = 0; persistDeckLocal(); showTab('tester'); window.scrollTo(0, 0);
+}
+
+/* ================= Onglet RECHERCHE ================= */
+var worker = null;
+function makeWorker() {
+  var src = document.getElementById('engine').textContent + '\n' + document.getElementById('workersrc').textContent;
+  var url = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+  return new Worker(url);
+}
+function renderSearch() {
+  var o = S.search.opts;
+  var owned = allCards().filter(function (c) { return c.owned; });
+  var pool = allCards().filter(function (c) { return o.ownedOnly ? c.owned : true; }).sort(function (a, b) { return a.name.localeCompare(b.name, 'fr'); });
+  var mustChips = o.must.map(function (id) { var c = cardById(id); return c ? '<span class="chip">' + elDot(c.el) + esc(c.name) + ' <button class="btn ghost small" style="padding:0 4px" data-unmust="' + esc(id) + '" aria-label="Retirer">×</button></span>' : ''; }).join(' ');
+  var res = S.search.results || (S.lastSearch && S.lastSearch.results) || null;
+  var resInfo = S.search.results ? '' : (S.lastSearch ? '<p class="small muted">Dernière recherche : ' + esc((S.lastSearch.at || '').replace('T', ' ').slice(0, 16)) + '. Relance-la après avoir changé des règles ou des cartes.</p>' : '');
+  var prog = S.search.running ? '<div class="stack" style="gap:6px"><div class="small">' + esc(S.search.phase) + ' · ' + fmt(S.search.done) + ' / ' + fmt(S.search.total) + '</div><div class="progress"><i style="width:' + (S.search.total ? (S.search.done / S.search.total * 100) : 0) + '%"></i></div></div>' : '';
+  var n = pool.length, combos = n >= 4 ? n * (n - 1) * (n - 2) * (n - 3) / 24 : 0;
+  var tableHtml = '';
+  if (res && res.length) {
+    tableHtml = '<div class="tablewrap"><table><thead><tr><th>#</th><th>Cartes</th><th>Talents</th><th>Multiplicateur</th><th class="num">Scénarios gagnés</th><th class="num">Kill</th><th class="num">Score</th><th></th></tr></thead><tbody>' +
+      res.map(function (r, i) {
+        var cs = r.ids.map(cardById);
+        if (cs.some(function (c) { return !c; })) return '';
+        return '<tr><td>' + (i + 1) + '</td><td><div class="row" style="gap:4px">' + cs.map(function (c) { return cardChip(c); }).join('') + '</div></td>' +
+          '<td class="small">' + cs.map(function (c, j) { return esc(talentName(c, r.tals[j])); }).join('<br>') + '</td>' +
+          '<td class="small">' + (r.mult == null ? '–' : esc(cs[r.mult].name)) + '</td>' +
+          '<td class="num ' + (r.wins === r.total ? 'good' : 'warn') + '">' + r.wins + '/' + r.total + '</td><td class="num">' + (r.kill ? 'T' + fmt(r.kill, 1) : '–') + '</td><td class="num">' + fmt(r.avg, 2) + '</td>' +
+          '<td><button class="btn" data-try="' + i + '">Tester</button></td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+  $('#panel-search').innerHTML = '<div class="grid2"><div class="stack"><div class="box stack"><h2>Recherche</h2>' +
+    '<p class="small muted" style="margin:0">Le simulateur évalue chaque combinaison de 4 cartes, puis rejoue les 500 meilleures en détail : morts carte par carte, provocations, boutique, toutes les règles encore inconnues. Il choisit ensuite les talents et la carte qui porte le Multiplicateur.</p>' +
+    '<label class="mult"><input type="checkbox" id="opt-owned"' + (o.ownedOnly ? ' checked' : '') + '> Seulement les cartes que je possède (' + owned.length + ')</label>' +
+    '<label class="mult"><input type="checkbox" id="opt-recal"' + (o.recalibrate ? ' checked' : '') + '> Recalibrer l’adversaire sur les meilleurs decks trouvés</label>' +
+    '<label class="f"><span>Le deck doit contenir</span><select id="opt-must"><option value="">Ajouter une carte…</option>' + pool.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>'; }).join('') + '</select></label>' +
+    (mustChips ? '<div class="row">' + mustChips + '</div>' : '') +
+    '<button class="btn primary" id="runsearch"' + (S.search.running ? ' disabled' : '') + '>' + (S.search.running ? 'Recherche en cours…' : 'Lancer la recherche (' + fmt(combos) + ' decks)') + '</button>' + prog +
+    '</div><div class="box small stack"><h3>Comment lire le résultat</h3><p style="margin:0"><b>Scénarios gagnés</b> : chaque règle marquée « Je ne sais pas » est testée dans les deux sens. 8/8 veut dire que le deck gagne quelle que soit la vraie règle.</p><p style="margin:0"><b>Score</b> : au-dessus de 1, le deck gagne ; plus il est haut, plus il gagne vite et avec de la marge.</p><p style="margin:0" class="muted">L’adversaire simulé reproduit la courbe de dégâts des 1000 decks les plus rapides' + (S.curveAt ? ' (recalibré le ' + esc(S.curveAt.slice(0, 10)) + ')' : '') + '.</p></div></div>' +
+    '<div class="stack"><div class="box stack"><h2>Meilleurs decks</h2>' + resInfo + (tableHtml || '<p class="muted">Lance une recherche pour voir le classement.</p>') + '</div></div></div>';
+}
+$('#panel-search').addEventListener('change', function (e) {
+  var t = e.target, o = S.search.opts;
+  if (t.id === 'opt-owned') { o.ownedOnly = t.checked; renderSearch(); }
+  if (t.id === 'opt-recal') { o.recalibrate = t.checked; }
+  if (t.id === 'opt-must' && t.value) { if (o.must.indexOf(t.value) < 0 && o.must.length < 3) o.must.push(t.value); renderSearch(); }
+});
+$('#panel-search').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.unmust) { S.search.opts.must = S.search.opts.must.filter(function (x) { return x !== b.dataset.unmust; }); renderSearch(); return; }
+  if (b.dataset.try != null) { var res = S.search.results || (S.lastSearch && S.lastSearch.results); var r = res[+b.dataset.try]; loadDeckIntoTester(r.ids, r.tals, r.mult); return; }
+  if (b.id === 'runsearch') startSearch();
+});
+function startSearch() {
+  var o = S.search.opts, R = rulesObj();
+  var pool = allCards().filter(function (c) { return (o.ownedOnly ? c.owned : true) && !(c.selfhit && R.owlAllies === true); });
+  if (pool.length < 4) { toast('Il faut au moins 4 cartes.'); return; }
+  try { if (worker) worker.terminate(); worker = makeWorker(); } catch (er) { toast('Le navigateur refuse le calcul en arrière-plan.'); return; }
+  S.search.running = true; S.search.phase = 'Préparation'; S.search.done = 0; S.search.total = 1; S.search.results = null; renderSearch();
+  worker.onmessage = function (ev) {
+    var m = ev.data;
+    if (m.type === 'progress') { S.search.phase = m.phase; S.search.done = m.done; S.search.total = m.total; var pr = $('#panel-search .progress i'); if (pr && S.tab === 'search') { renderSearch(); } }
+    else if (m.type === 'done') {
+      S.search.running = false; S.search.results = m.results;
+      var at = new Date().toISOString();
+      if (m.curve) { S.curve = m.curve; S.curveAt = at; dbWrite('config/curve', { curve: m.curve, at: at }); }
+      dbWrite('config/lastSearch', { at: at, results: m.results, opts: o, decks: m.decks, ms: m.ms, rules: R });
+      lsSave(); SERIES_CACHE.clear(); renderSearch(); toast('Recherche terminée en ' + fmt(m.ms / 1000, 1) + ' s');
+    } else if (m.type === 'error') { S.search.running = false; renderSearch(); toast('Erreur pendant la recherche'); console.error(m.message); }
+  };
+  worker.postMessage({ type: 'search', cards: pool, rules: R, curve: S.curve, opts: { must: o.must, recalibrate: o.recalibrate } });
+}
+
+/* ================= Onglet CARTES ================= */
+function renderCards() {
+  var f = S.cardFilter, cs = allCards().slice().sort(function (a, b) { return a.name.localeCompare(b.name, 'fr'); });
+  var list = cs.filter(function (c) {
+    if (f.mode === 'owned' && !c.owned) return false;
+    if (f.mode === 'edited' && !S.overrides[c.id]) return false;
+    if (f.el && c.el !== f.el) return false;
+    if (f.q && c.name.toLowerCase().indexOf(f.q.toLowerCase()) < 0) return false;
+    return true;
+  });
+  if (!S.cardSel || !cardById(S.cardSel)) S.cardSel = (list[0] || cs[0]).id;
+  var sel = cardById(S.cardSel);
+  if (!S.draft || S.draft.id !== sel.id) { S.draft = clone(sel); S.draftDirty = false; }
+  var listHtml = list.map(function (c) {
+    return '<button data-sel="' + esc(c.id) + '" aria-current="' + (c.id === S.cardSel) + '"><span class="el" style="background:var(--' + c.el + ')"></span><span style="min-width:0"><b>' + esc(c.name) + '</b>' + (c.owned ? '' : ' <span class="tag-unowned">pas possédée</span>') + (S.overrides[c.id] ? ' <span class="chip" style="font-size:.68rem;padding:0 6px">modifiée</span>' : '') + '</span><span class="small muted">' + c.hp + ' PV</span></button>';
+  }).join('') || '<p class="muted small" style="padding:8px">Aucune carte ne correspond.</p>';
+  $('#panel-cards').innerHTML = '<div class="grid2"><div class="box stack">' +
+    '<input type="text" id="cf-q" placeholder="Chercher une carte" value="' + esc(f.q) + '">' +
+    '<div class="row"><select id="cf-el" style="flex:1"><option value="">Tous les éléments</option>' + EL.split('').map(function (e) { return '<option value="' + e + '"' + (f.el === e ? ' selected' : '') + '>' + ELN[e] + '</option>'; }).join('') + '</select>' +
+    '<select id="cf-mode" style="flex:1"><option value="owned"' + (f.mode === 'owned' ? ' selected' : '') + '>Possédées</option><option value="all"' + (f.mode === 'all' ? ' selected' : '') + '>Toutes</option><option value="edited"' + (f.mode === 'edited' ? ' selected' : '') + '>Modifiées</option></select></div>' +
+    '<div class="cardlist">' + listHtml + '</div><button class="btn" id="newcard">Ajouter une carte</button></div>' +
+    '<div class="box stack" id="editor">' + editorHtml(S.draft) + '</div></div>';
+}
+function numIn(path, v, step, label) {
+  return '<label class="f"><span>' + esc(label) + '</span><input type="number" step="' + (step || 'any') + '" data-p="' + path + '" id="ed-' + path.replace(/[^a-z0-9]/gi, '-') + '" value="' + (v == null ? '' : v) + '"></label>';
+}
+function elGrid(path, obj, label) {
+  obj = obj || {};
+  return '<div><div class="small muted" style="margin-bottom:4px;font-weight:600">' + esc(label) + '</div><div class="elgrid">' + EL.split('').map(function (e) {
+    return '<label>' + elDot(e) + ' ' + ELN[e] + '<input type="number" step="any" data-p="' + path + '.' + e + '" id="ed-' + path.replace(/[^a-z0-9]/gi, '-') + '-' + e + '" value="' + (obj[e] || '') + '"></label>';
+  }).join('') + '</div></div>';
+}
+function editorHtml(c) {
+  var base = BASE.cards.find(function (b) { return b.id === c.id; });
+  var abil = (c.abil || []).map(function (a, i) {
+    var p = 'abil.' + i;
+    return '<fieldset><legend>' + esc(a.n || ('Capacité ' + (i + 1))) + '</legend>' +
+      '<div class="fields">' +
+      '<label class="f"><span>Nom</span><input type="text" data-p="' + p + '.n" id="ed-a' + i + '-n" value="' + esc(a.n || '') + '"></label>' +
+      numIn(p + '.cd', a.cd, 1, 'Recharge (tours)') +
+      '<label class="f"><span>Cible des dégâts</span><select data-p="' + p + '.tgt" id="ed-a' + i + '-tgt"><option value="single"' + (a.tgt === 'single' ? ' selected' : '') + '>Une carte</option><option value="aoe"' + (a.tgt === 'aoe' ? ' selected' : '') + '>Toutes les cartes adverses</option><option value="none"' + (a.tgt === 'none' ? ' selected' : '') + '>Pas de dégâts</option></select></label>' +
+      numIn(p + '.acc', a.acc, 0.01, 'Précision (0 à 1)') + numIn(p + '.cc', a.cc, 0.01, 'Chance de critique (0 à 1)') + numIn(p + '.cm', a.cm, 1, 'Multiplicateur critique') +
+      numIn(p + '.hits', a.hits, 1, 'Coups par lancer') + numIn(p + '.echo', a.echo, 0.05, 'Écho (0 à 1)') + numIn(p + '.inc', a.inc, 1, '+ dégâts de base par usage') +
+      numIn(p + '.once_at', a.once_at, 1, 'Usage unique au tour') + numIn(p + '.rnd_dmg', a.rnd_dmg, 1, 'Dégâts élément aléatoire') + numIn(p + '.rnd_gen', a.rnd_gen, 1, 'Bonus élément aléatoire') +
+      numIn(p + '.crit_team', a.crit_team, 0.01, 'Critique donné à l’équipe') + numIn(p + '.base_team', a.base_team, 1, 'Dégâts de base donnés à l’équipe') + numIn(p + '.maxhp_team', a.maxhp_team, 5, 'PV max donnés à chaque allié') +
+      '<label class="f"><span>Cible des soins</span><select data-p="' + p + '.heal_tgt" id="ed-a' + i + '-ht"><option value="single"' + (a.heal_tgt !== 'all' && a.heal_tgt !== 'self' ? ' selected' : '') + '>Une carte alliée</option><option value="all"' + (a.heal_tgt === 'all' ? ' selected' : '') + '>Toutes tes cartes</option><option value="self"' + (a.heal_tgt === 'self' ? ' selected' : '') + '>Elle-même</option></select></label>' +
+      '<label class="mult"><input type="checkbox" data-p="' + p + '.freeze" id="ed-a' + i + '-fz"' + (a.freeze ? ' checked' : '') + '> Gèle la cible</label>' +
+      '</div>' + elGrid(p + '.dmg', a.dmg, 'Dégâts par élément') + elGrid(p + '.gen', a.gen, 'Bonus d’élément gagné') + elGrid(p + '.heal', a.heal, 'Soins par élément') + elGrid(p + '.cost', a.cost, 'Coût en bonus d’élément') +
+      '<div><button class="btn ghost danger" data-delabil="' + i + '">Supprimer cette capacité</button></div></fieldset>';
+  }).join('');
+  var tal = (c.talents || []).map(function (t, i) {
+    return '<div class="stack" style="gap:6px;padding:8px 0;border-bottom:1px solid var(--line)"><div class="row"><label class="mult"><input type="radio" name="pref" value="' + i + '" id="ed-pref-' + i + '"' + ((c.pref || 0) === i ? ' checked' : '') + '> Talent utilisé par défaut</label></div>' +
+      '<div class="fields"><label class="f"><span>Nom</span><input type="text" data-p="talents.' + i + '.name" id="ed-t' + i + '-n" value="' + esc(t.name) + '"></label></div>' +
+      '<label class="f"><span>Effet pour le simulateur (avancé)</span><textarea data-json="talents.' + i + '.mods" id="ed-t' + i + '-m" style="min-height:44px;font-family:var(--mono);font-size:.8rem">' + esc(JSON.stringify(t.mods || {})) + '</textarea></label></div>';
+  }).join('');
+  return '<div class="row" style="justify-content:space-between"><div class="row"><span class="el" style="width:14px;height:14px;background:var(--' + c.el + ')"></span><h2>' + esc(c.name) + '</h2></div>' +
+    '<label class="mult"><input type="checkbox" data-p="owned" id="ed-owned"' + (c.owned ? ' checked' : '') + '> Je possède cette carte</label></div>' +
+    (S.overrides[c.id] ? '<div class="note">Tu as modifié cette carte. Le simulateur utilise tes valeurs.</div>' : '') +
+    '<div class="fields"><label class="f"><span>Nom</span><input type="text" data-p="name" id="ed-name" value="' + esc(c.name) + '"></label>' +
+    '<label class="f"><span>Élément</span><select data-p="el" id="ed-el">' + EL.split('').map(function (e) { return '<option value="' + e + '"' + (c.el === e ? ' selected' : '') + '>' + ELN[e] + '</option>'; }).join('') + '</select></label>' +
+    numIn('hp', c.hp, 10, 'PV') + numIn('res', c.res, 0.01, 'Résistance moyenne (0 à 1)') + numIn('spam', c.spam, 1, 'Spamton par tour') +
+    numIn('taunt', c.taunt, 0.05, 'Provocation (part du temps)') + numIn('berserk', c.berserk, 0.01, 'Berserk (0,25 = +25 %)') + numIn('splash', c.splash, 0.05, 'Tox AoE (0,2 = 20 %)') +
+    numIn('erosion', c.erosion, 0.05, 'Érosion (bonus de dégâts)') + numIn('graveyard', c.graveyard, 1, 'Cimetière (+ par mort)') + numIn('heal_pct', c.heal_pct, 0.01, 'Soin par tour (part des PV)') +
+    numIn('bomba', c.bomba, 50, 'Bomba (dégâts à la mort)') + numIn('instakill_cd', c.instakill_cd, 1, 'Absorbe une carte tous les') +
+    '<label class="mult"><input type="checkbox" data-p="freeze_tox" id="ed-ftox"' + (c.freeze_tox ? ' checked' : '') + '> Tox Gel (tous ses coups gèlent)</label>' +
+    '<label class="mult"><input type="checkbox" data-p="native_mult" id="ed-nmult"' + (c.native_mult ? ' checked' : '') + '> Multiplicateur de départ</label></div>' +
+    elGrid('hearts', c.hearts, 'Cœurs de départ (bonus par tour pour l’équipe)') +
+    '<h3>Capacités</h3>' + (abil || '<p class="muted small">Pas de capacité.</p>') + '<div><button class="btn" id="addabil">Ajouter une capacité</button></div>' +
+    '<h3>Talents</h3>' + tal +
+    '<p class="small muted" style="margin:0">Clés possibles pour l’effet : start {"N":7} bonus de départ · hearts {"N":1} Cœur par tour · hp, res, spam, cavalry, soulvit, splash, crit_self, graveyard, shared_shield · life8 true.</p>' +
+    '<label class="f"><span>Notes sur cette carte</span><textarea data-p="notes" id="ed-notes">' + esc(c.notes || '') + '</textarea></label>' +
+    '<div class="row"><button class="btn primary" id="savecard">Enregistrer la carte</button><button class="btn" id="cancelcard">Annuler mes changements</button>' +
+    (S.overrides[c.id] && base ? '<button class="btn ghost danger" id="resetcard">Revenir aux valeurs d’origine</button>' : '') +
+    (!base ? '<button class="btn ghost danger" id="deletecard">Supprimer la carte</button>' : '') + '</div>';
+}
+function setPath(obj, path, val) {
+  var ks = path.split('.'), o = obj;
+  for (var i = 0; i < ks.length - 1; i++) { var k = /^\d+$/.test(ks[i]) ? +ks[i] : ks[i]; if (o[k] == null) o[k] = {}; o = o[k]; }
+  var last = ks[ks.length - 1];
+  if (val === '' || val == null || (typeof val === 'number' && isNaN(val))) delete o[last]; else o[last] = val;
+}
+$('#panel-cards').addEventListener('input', function (e) {
+  var t = e.target;
+  if (t.id === 'cf-q') { S.cardFilter.q = t.value; var pos = t.selectionStart; renderCards(); var n = $('#cf-q'); n.focus(); try { n.setSelectionRange(pos, pos); } catch (er) {} return; }
+  if (t.dataset.p && t.type !== 'checkbox' && t.tagName !== 'SELECT') {
+    var v = t.type === 'number' ? (t.value === '' ? '' : parseFloat(t.value)) : t.value;
+    setPath(S.draft, t.dataset.p, v); S.draftDirty = true;
+  }
+  if (t.dataset.json) { try { setPath(S.draft, t.dataset.json, JSON.parse(t.value || '{}')); t.style.borderColor = ''; S.draftDirty = true; } catch (er) { t.style.borderColor = 'var(--bad)'; } }
+});
+$('#panel-cards').addEventListener('change', function (e) {
+  var t = e.target;
+  if (t.id === 'cf-el') { S.cardFilter.el = t.value; renderCards(); return; }
+  if (t.id === 'cf-mode') { S.cardFilter.mode = t.value; renderCards(); return; }
+  if (t.name === 'pref') { S.draft.pref = +t.value; S.draftDirty = true; return; }
+  if (t.dataset.p && t.type === 'checkbox') { setPath(S.draft, t.dataset.p, t.checked ? true : ''); if (t.dataset.p === 'owned') S.draft.owned = t.checked; S.draftDirty = true; }
+  if (t.dataset.p && t.tagName === 'SELECT') { setPath(S.draft, t.dataset.p, t.value); S.draftDirty = true; }
+});
+$('#panel-cards').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.sel) { if (S.draftDirty && b.dataset.sel !== S.draft.id) toast('Changements non enregistrés abandonnés'); S.cardSel = b.dataset.sel; S.draft = null; S.draftDirty = false; renderCards(); return; }
+  if (b.id === 'addabil') { S.draft.abil = S.draft.abil || []; S.draft.abil.push({ n: 'Nouvelle capacité', cd: 2, tgt: 'single', acc: 1, cc: 0.01, cm: 2, hits: 1, dmg: {} }); S.draftDirty = true; $('#editor').innerHTML = editorHtml(S.draft); return; }
+  if (b.dataset.delabil != null) { S.draft.abil.splice(+b.dataset.delabil, 1); S.draftDirty = true; $('#editor').innerHTML = editorHtml(S.draft); return; }
+  if (b.id === 'cancelcard') { S.draft = null; S.draftDirty = false; renderCards(); return; }
+  if (b.id === 'savecard') { saveCard(S.draft); return; }
+  if (b.id === 'resetcard') { var id = S.draft.id; delete S.overrides[id]; S.draft = null; S.draftDirty = false; if (DB) dbDelete('cards/' + id); else lsSave(); SERIES_CACHE.clear(); renderCards(); toast('Valeurs d’origine rétablies'); return; }
+  if (b.id === 'deletecard') { var id2 = S.draft.id; delete S.overrides[id2]; S.draft = null; S.cardSel = null; if (DB) dbDelete('cards/' + id2); else lsSave(); renderCards(); toast('Carte supprimée'); return; }
+  if (b.id === 'newcard') {
+    var nid = 'perso-' + Date.now().toString(36);
+    var nc = { id: nid, name: 'Nouvelle carte', el: 'F', hp: 600, res: 0.05, spam: 6, hearts: {}, owned: true, abil: [{ n: 'Attaque', cd: 2, tgt: 'single', acc: 1, cc: 0.01, cm: 2, hits: 1, dmg: { F: 30 } }], talents: [{ name: 'Talent 1', mods: {} }, { name: 'Talent 2', mods: {} }, { name: 'Talent 3', mods: {} }], pref: 0, notes: '', custom: true };
+    S.cardFilter.mode = 'all'; S.cardSel = nid; S.draft = nc; S.draftDirty = true;
+    S.overrides[nid] = clone(nc); renderCards(); return;
+  }
+});
+function saveCard(c) {
+  var data = clone(c); delete data._v;
+  var at = new Date().toISOString();
+  data._v = at;
+  S.overrides[c.id] = data; S.draftDirty = false;
+  SERIES_CACHE.clear();
+  if (DB) dbWrite('cards/' + c.id, { card: Object.assign({}, data, { _v: undefined }), name: c.name, updatedAt: at }).then(function () { toast('Carte enregistrée'); });
+  else { lsSave(); toast('Carte enregistrée sur cet appareil'); }
+  renderCards(); updateSubline();
+}
+
+/* ================= Onglet RÈGLES ================= */
+function renderRules() {
+  var qs = RULES.map(function (r) {
+    var cur = S.answers[r.id];
+    var seg = r.opts.map(function (o) { var v = o[0]; return '<button data-rule="' + r.id + '" data-v="' + (v === true ? 'true' : v === false ? 'false' : v) + '" aria-pressed="' + (cur === v) + '">' + esc(o[1]) + '</button>'; }).join('');
+    return '<div class="q"><div class="stack" style="gap:4px;min-width:0"><b>' + esc(r.q) + '</b><span class="small muted">' + esc(r.help) + '</span>' +
+      '<input type="text" class="small" data-rnote="' + r.id + '" id="rn-' + r.id + '" placeholder="D’où vient l’info ? (facultatif)" value="' + esc(S.ruleNotes[r.id] || '') + '">' +
+      (S.ruleDates[r.id] ? '<span class="small muted">Réponse du ' + esc(S.ruleDates[r.id].slice(0, 10)) + '</span>' : '') + '</div><div><div class="seg">' + seg + '</div></div></div>';
+  }).join('');
+  var nums = NUMS.map(function (n) { return '<label class="f"><span>' + esc(n.label) + (n.unit ? ' (' + esc(n.unit) + ')' : '') + '</span><input type="number" step="' + n.step + '" data-num="' + n.id + '" id="num-' + n.id + '" value="' + S.numbers[n.id] + '"></label>'; }).join('');
+  var infos = S.infos.length ? S.infos.map(function (x) {
+    return '<div class="row" style="justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><div>' + esc(x.text) + '</div><div class="small muted">' + esc((x.at || '').replace('T', ' ').slice(0, 16)) + (x.status ? ' · ' + esc(x.status) : ' · en attente de Claude') + '</div></div><button class="btn ghost danger small" data-delinfo="' + esc(x.id) + '">Supprimer</button></div>';
+  }).join('') : '<p class="muted small">Rien pour l’instant.</p>';
+  $('#panel-rules').innerHTML = '<div class="grid2"><div class="stack">' +
+    '<div class="box stack"><h2>Ajouter une info</h2><p class="small muted" style="margin:0">Une valeur vue en jeu, un effet mal compris, un patch… Claude lit cette liste à ta prochaine demande et met à jour les cartes ou le simulateur.</p>' +
+    '<textarea id="newinfo" placeholder="Ex. : Feau de Scorch inflige aussi 10 dégâts Eau"></textarea><button class="btn primary" id="addinfo">Ajouter</button></div>' +
+    '<div class="box"><h3>Infos ajoutées</h3>' + infos + '</div>' +
+    '<div class="box stack"><h3>Réglages du simulateur</h3><div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">' + nums + '</div><div><button class="btn ghost" id="resetnums">Valeurs par défaut</button></div></div>' +
+    '</div><div class="box"><h2>Règles du jeu à confirmer</h2><p class="small muted">Ta réponse est enregistrée et appliquée à toutes les simulations. « Je ne sais pas » fait tester les deux possibilités.</p>' + qs + '</div></div>';
+}
+$('#panel-rules').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.rule) {
+    var v = b.dataset.v; v = v === 'true' ? true : v === 'false' ? false : v;
+    S.answers[b.dataset.rule] = v; S.ruleDates[b.dataset.rule] = new Date().toISOString();
+    saveRules(); SERIES_CACHE.clear(); renderRules(); updateSubline(); toast('Réponse enregistrée'); return;
+  }
+  if (b.id === 'addinfo') {
+    var txt = ($('#newinfo').value || '').trim(); if (!txt) return;
+    var item = { text: txt, at: new Date().toISOString(), status: '' };
+    if (DB) DB.collection('infos').add(item).then(function () { toast('Info ajoutée'); }).catch(function (er) { toast('Enregistrement impossible : ' + (er && er.message || er)); });
+    else { item.id = 'i' + Date.now(); S.infos.unshift(item); lsSave(); renderRules(); toast('Info ajoutée sur cet appareil'); }
+    $('#newinfo').value = ''; return;
+  }
+  if (b.dataset.delinfo) { var id = b.dataset.delinfo; if (DB) dbDelete('infos/' + id); else { S.infos = S.infos.filter(function (x) { return x.id !== id; }); lsSave(); renderRules(); } return; }
+  if (b.id === 'resetnums') { NUMS.forEach(function (n) { S.numbers[n.id] = n.d; }); saveRules(); renderRules(); toast('Réglages remis par défaut'); }
+});
+var numTimer = null, noteTimer = null;
+$('#panel-rules').addEventListener('input', function (e) {
+  var t = e.target;
+  if (t.dataset.num) { var v = parseFloat(t.value); if (!isNaN(v)) { S.numbers[t.dataset.num] = v; clearTimeout(numTimer); numTimer = setTimeout(saveRules, 600); } }
+  if (t.dataset.rnote) { S.ruleNotes[t.dataset.rnote] = t.value; clearTimeout(noteTimer); noteTimer = setTimeout(saveRules, 800); }
+});
+
+/* ---------- Démarrage ---------- */
+var startTab = 'tester';
+try { var st = localStorage.getItem(LS_KEY + '-tab'); if (st) startTab = st; } catch (e) {}
+if (['tester', 'search', 'cards', 'rules'].indexOf(location.hash.slice(1)) >= 0) startTab = location.hash.slice(1);
+updateSubline();
+showTab(startTab);
+})();
+</script>
+</body></html>
