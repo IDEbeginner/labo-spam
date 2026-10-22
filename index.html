@@ -545,6 +545,28 @@ function testDeck(cards, tals, multK, R, curve, cap, wantLog) {
   return { results: results, unknowns: unk, wins: wins, total: results.length, avg: avg, worst: worst };
 }
 
+/* Énergie du carry: bonus/tour que le deck génère dans les éléments de la carte qui fait le plus de dégâts */
+function genRate(s, e, ownToo) {
+  var a = s.genTeam[e * T + 9] - s.genTeam[e * T + 4];
+  if (ownToo) a += s.genOwn[e * T + 9] - s.genOwn[e * T + 4];
+  return a / 5;
+}
+function carryInfo(Ss, C) {
+  var n = Ss.length, carry = 0, best = -1;
+  for (var j = 0; j < n; j++) { var d = 0; for (var e = 0; e < 6; e++) d += Ss[j].coef[e * T + 9]; if (d > best) { best = d; carry = j; } }
+  var c = Ss[carry], tot = 0, w = [0, 0, 0, 0, 0, 0];
+  for (var e2 = 0; e2 < 6; e2++) { w[e2] = c.coef[e2 * T + 9]; tot += w[e2]; }
+  if (tot <= 0) return { carry: carry, energy: 0, elems: [], from: [] };
+  var energy = 0, from = [];
+  for (var i = 0; i < n; i++) {
+    var g = 0;
+    for (var e3 = 0; e3 < 6; e3++) if (w[e3] > 0) g += w[e3] / tot * genRate(Ss[i], e3, C.sharedPool || i === carry);
+    from.push(g); energy += g;
+  }
+  var elems = []; for (var e4 = 0; e4 < 6; e4++) if (w[e4] / tot > 0.15) elems.push(EL[e4]);
+  return { carry: carry, energy: energy, elems: elems, from: from };
+}
+
 </script>
 <script id="workersrc" type="text/plain">
 /* ===== Worker de recherche ===== */
@@ -654,6 +676,20 @@ function runSearch(msg) {
   var n = cards.length;
   var S = cards.map(function (c) { return cardSeries(c, c.pref || 0, M); });
   var P = prepFast(S, M);
+  // énergie du carry (pré-calcul par carte)
+  var minE = opts.minEnergy || 0;
+  var dTot = new Float64Array(n), W = new Float64Array(n * 6), G = new Float64Array(n * 6), GO = new Float64Array(n * 6);
+  for (var ci = 0; ci < n; ci++) {
+    var tt = 0; for (var ce = 0; ce < 6; ce++) { W[ci * 6 + ce] = S[ci].coef[ce * T + 9]; tt += W[ci * 6 + ce]; }
+    dTot[ci] = tt; if (tt > 0) for (var ce2 = 0; ce2 < 6; ce2++) W[ci * 6 + ce2] /= tt;
+    for (var ce3 = 0; ce3 < 6; ce3++) { G[ci * 6 + ce3] = genRate(S[ci], ce3, M.sharedPool); GO[ci * 6 + ce3] = genRate(S[ci], ce3, true); }
+  }
+  var energyOf = function (ids) {
+    var cr = ids[0]; for (var q = 1; q < 4; q++) if (dTot[ids[q]] > dTot[cr]) cr = ids[q];
+    var en = 0;
+    for (var q2 = 0; q2 < 4; q2++) { var src = ids[q2] === cr ? GO : G; for (var e = 0; e < 6; e++) en += W[cr * 6 + e] * src[ids[q2] * 6 + e]; }
+    return en;
+  };
   var must = (opts.must || []).map(function (id) { return cards.findIndex(function (c) { return c.id === id; }); }).filter(function (i) { return i >= 0; });
   var total = 0;
   for (var a = 0; a < n; a++) for (var b = a + 1; b < n; b++) for (var c = b + 1; c < n; c++) total += n - c - 1;
@@ -674,6 +710,7 @@ function runSearch(msg) {
             if (!ok) continue;
           }
           var ids4 = [i, j, k, l];
+          if (minE > 0 && energyOf(ids4) < minE) continue;
           var sc = evalFast(P, ids4, M, curve, false);
           var item = { ids: ids4, score: sc, tkill: _lastTkill };
           topInsert(topS, item, 300, keyS);
@@ -735,7 +772,7 @@ function runSearch(msg) {
     var kills = d.best.results.filter(function (r) { return r.tkill != null; }).map(function (r) { return r.tkill; }).sort(function (a, b) { return a - b; });
     return {
       ids: d.ids.map(function (x) { return cards[x].id; }), tals: d.tals, mult: d.best.mult,
-      avg: d.best.avg, worst: d.best.worst, wins: d.best.wins, total: d.best.total,
+      avg: d.best.avg, worst: d.best.worst, wins: d.best.wins, total: d.best.total, energy: Math.round(energyOf(d.ids) * 10) / 10,
       kill: kills.length ? kills[Math.floor(kills.length / 2)] : null
     };
   });
@@ -769,7 +806,7 @@ var NUMS = [
   { id: 'aoeTargets', label: 'Cartes touchées en moyenne par une attaque de zone', unit: 'cartes', step: 0.1, d: 3.5 },
   { id: 'enemyF', label: "Force de l'adversaire simulé", unit: '%', step: 5, d: 100 },
   { id: 'enemyEHP', label: "PV totaux de l'adversaire (résistances comprises)", unit: 'PV', step: 100, d: 3600 },
-  { id: 'hearts', label: 'Cœurs achetés en boutique par partie', unit: '', step: 1, d: 3 },
+  { id: 'hearts', label: 'Cœurs achetés en boutique par partie', unit: '', step: 1, d: 1 },
   { id: 'heartGain', label: "Bonus par tour d'un Cœur acheté (épique)", unit: '/tour', step: 1, d: 5 },
   { id: 'heartCost', label: "Prix d'un Cœur", unit: 'Spamton', step: 5, d: 60 },
   { id: 'heartFrom', label: 'Premier tour où tu achètes un Cœur', unit: 'tour', step: 1, d: 4 },
@@ -790,7 +827,7 @@ var S = {
   overrides: {}, infos: [], decks: [], curve: BASE.curve.slice(), curveAt: null, lastSearch: null,
   tab: 'tester',
   tester: { slots: [], mult: null, scen: 0 },
-  search: { running: false, phase: '', done: 0, total: 0, results: null, opts: { ownedOnly: true, must: [], recalibrate: true } },
+  search: { running: false, phase: '', done: 0, total: 0, results: null, opts: { ownedOnly: true, must: [], recalibrate: true, minEnergy: 3 } },
   cardSel: null, cardFilter: { q: '', el: '', mode: 'owned' }, draft: null
 };
 NUMS.forEach(function (n) { S.numbers[n.id] = n.d; });
@@ -853,7 +890,7 @@ if (window.claude && window.claude.use) {
       S.overrides = o; onDataChange('cards');
     }, function () {});
     db.collection('infos').onSnapshot(function (q) {
-      S.infos = q.docs.map(function (d) { var x = d.data(); return { id: d.id, text: x.text, at: x.at, status: x.status || '' }; }).sort(function (a, b) { return (b.at || '').localeCompare(a.at || ''); });
+      S.infos = q.docs.map(function (d) { var x = d.data(); return { id: d.id, text: x.text, at: x.at, status: x.status || '', changes: x.changes || [], question: x.question || '', undo: x.undo || null, card: x.card || '' }; }).sort(function (a, b) { return (b.at || '').localeCompare(a.at || ''); });
       onDataChange('infos');
     }, function () {});
     db.collection('decks').onSnapshot(function (q) {
@@ -972,10 +1009,17 @@ function testResultsHtml() {
     return '<button data-scen="' + i + '" aria-pressed="' + (i === S.tester.scen) + '"><b class="' + (ok ? 'good' : 'bad') + '">' + (ok ? 'Victoire T' + fmt(r.tkill, 1) : 'Défaite T' + (r.tdie || '20+')) + '</b><span class="muted">' + esc(scenLabel(r.assign)) + '</span></button>';
   }).join('');
   var R0 = T_.results[S.tester.scen];
+  var C0 = concreteRules(rulesObj(), {});
+  var ci = carryInfo(T_.cards.map(function (c, i) { return getSeries(c, S.tester.slots[i].ti, C0); }), C0);
+  var carryC = T_.cards[ci.carry];
+  var ecls = ci.energy >= 5 ? 'good' : (ci.energy >= 3 ? 'warn' : 'bad');
+  var carryHtml = '<div class="note"><b>Carry : ' + esc(carryC.name) + '</b> (' + ci.elems.map(function (e) { return ELN[e]; }).join(', ') + ') reçoit <b class="' + ecls + '">+' + fmt(ci.energy, 1) + ' bonus/tour</b> de ton deck' +
+    (ci.energy < 3 ? ' : c\u2019est peu, ses dégâts vont stagner.' : '.') + '<div class="small muted" style="margin-top:4px">' +
+    T_.cards.map(function (c, i) { return esc(c.name) + ' +' + fmt(ci.from[i], 1); }).join(' · ') + ' (hors Cœurs achetés en boutique)</div></div>';
   return '<div class="box stack"><div class="verdict"><div><div class="big ' + cls + '">' + w + '/' + n + '</div><div class="small muted">scénarios gagnés</div></div>' +
     '<div><div class="big">' + (med ? 'T' + fmt(med, 1) : '–') + '</div><div class="small muted">tour du kill (médiane)</div></div>' +
     '<div><div class="big">' + fmt(T_.avg, 2) + '</div><div class="small muted">score moyen (&gt;1 = victoire)</div></div></div>' +
-    '<p class="small muted" style="margin:0">' + unkTxt + '</p>' + owl +
+    carryHtml + '<p class="small muted" style="margin:0">' + unkTxt + '</p>' + owl +
     '<div class="scen">' + scenHtml + '</div></div>' +
     detailHtml(R0, T_.cards);
 }
@@ -1073,13 +1117,14 @@ function renderSearch() {
   var n = pool.length, combos = n >= 4 ? n * (n - 1) * (n - 2) * (n - 3) / 24 : 0;
   var tableHtml = '';
   if (res && res.length) {
-    tableHtml = '<div class="tablewrap"><table><thead><tr><th>#</th><th>Cartes</th><th>Talents</th><th>Multiplicateur</th><th class="num">Scénarios gagnés</th><th class="num">Kill</th><th class="num">Score</th><th></th></tr></thead><tbody>' +
+    tableHtml = '<div class="tablewrap"><table><thead><tr><th>#</th><th>Cartes</th><th>Talents</th><th>Multiplicateur</th><th class="num">Énergie carry</th><th class="num">Scénarios gagnés</th><th class="num">Kill</th><th class="num">Score</th><th></th></tr></thead><tbody>' +
       res.map(function (r, i) {
         var cs = r.ids.map(cardById);
         if (cs.some(function (c) { return !c; })) return '';
         return '<tr><td>' + (i + 1) + '</td><td><div class="row" style="gap:4px">' + cs.map(function (c) { return cardChip(c); }).join('') + '</div></td>' +
           '<td class="small">' + cs.map(function (c, j) { return esc(talentName(c, r.tals[j])); }).join('<br>') + '</td>' +
           '<td class="small">' + (r.mult == null ? '–' : esc(cs[r.mult].name)) + '</td>' +
+          '<td class="num">' + (r.energy == null ? '–' : '+' + fmt(r.energy, 1) + '/t') + '</td>' +
           '<td class="num ' + (r.wins === r.total ? 'good' : 'warn') + '">' + r.wins + '/' + r.total + '</td><td class="num">' + (r.kill ? 'T' + fmt(r.kill, 1) : '–') + '</td><td class="num">' + fmt(r.avg, 2) + '</td>' +
           '<td><button class="btn" data-try="' + i + '">Tester</button></td></tr>';
       }).join('') + '</tbody></table></div>';
@@ -1088,6 +1133,7 @@ function renderSearch() {
     '<p class="small muted" style="margin:0">Le simulateur évalue chaque combinaison de 4 cartes, puis rejoue les 500 meilleures en détail : morts carte par carte, provocations, boutique, toutes les règles encore inconnues. Il choisit ensuite les talents et la carte qui porte le Multiplicateur.</p>' +
     '<label class="mult"><input type="checkbox" id="opt-owned"' + (o.ownedOnly ? ' checked' : '') + '> Seulement les cartes que je possède (' + owned.length + ')</label>' +
     '<label class="mult"><input type="checkbox" id="opt-recal"' + (o.recalibrate ? ' checked' : '') + '> Recalibrer l’adversaire sur les meilleurs decks trouvés</label>' +
+    '<label class="f"><span>Énergie minimum pour le carry (bonus par tour dans ses éléments)</span><input type="number" step="0.5" min="0" id="opt-energy" value="' + o.minEnergy + '"></label>' +
     '<label class="f"><span>Le deck doit contenir</span><select id="opt-must"><option value="">Ajouter une carte…</option>' + pool.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + '</option>'; }).join('') + '</select></label>' +
     (mustChips ? '<div class="row">' + mustChips + '</div>' : '') +
     '<button class="btn primary" id="runsearch"' + (S.search.running ? ' disabled' : '') + '>' + (S.search.running ? 'Recherche en cours…' : 'Lancer la recherche (' + fmt(combos) + ' decks)') + '</button>' + prog +
@@ -1098,6 +1144,7 @@ $('#panel-search').addEventListener('change', function (e) {
   var t = e.target, o = S.search.opts;
   if (t.id === 'opt-owned') { o.ownedOnly = t.checked; renderSearch(); }
   if (t.id === 'opt-recal') { o.recalibrate = t.checked; }
+  if (t.id === 'opt-energy') { var ve = parseFloat(t.value); o.minEnergy = isNaN(ve) ? 0 : ve; }
   if (t.id === 'opt-must' && t.value) { if (o.must.indexOf(t.value) < 0 && o.must.length < 3) o.must.push(t.value); renderSearch(); }
 });
 $('#panel-search').addEventListener('click', function (e) {
@@ -1123,7 +1170,7 @@ function startSearch() {
       lsSave(); SERIES_CACHE.clear(); renderSearch(); toast('Recherche terminée en ' + fmt(m.ms / 1000, 1) + ' s');
     } else if (m.type === 'error') { S.search.running = false; renderSearch(); toast('Erreur pendant la recherche'); console.error(m.message); }
   };
-  worker.postMessage({ type: 'search', cards: pool, rules: R, curve: S.curve, opts: { must: o.must, recalibrate: o.recalibrate } });
+  worker.postMessage({ type: 'search', cards: pool, rules: R, curve: S.curve, opts: { must: o.must, recalibrate: o.recalibrate, minEnergy: o.minEnergy } });
 }
 
 /* ================= Onglet CARTES ================= */
@@ -1197,6 +1244,7 @@ function editorHtml(c) {
     '<h3>Talents</h3>' + tal +
     '<p class="small muted" style="margin:0">Clés possibles pour l’effet : start {"N":7} bonus de départ · hearts {"N":1} Cœur par tour · hp, res, spam, cavalry, soulvit, splash, crit_self, graveyard, shared_shield · life8 true.</p>' +
     '<label class="f"><span>Notes sur cette carte</span><textarea data-p="notes" id="ed-notes">' + esc(c.notes || '') + '</textarea></label>' +
+    (SAMPLE && !SAMPLE_OFF ? '<div class="row"><button class="btn" id="applynote">Appliquer la note avec Claude</button><span class="small muted">Claude corrige la fiche d\u2019après ta note.</span></div>' : '<p class="small muted" style="margin:0">Pour que Claude applique tes notes automatiquement, ouvre le labo depuis Claude, ou écris l\u2019info dans « Règles et infos ».</p>') +
     '<div class="row"><button class="btn primary" id="savecard">Enregistrer la carte</button><button class="btn" id="cancelcard">Annuler mes changements</button>' +
     (S.overrides[c.id] && base ? '<button class="btn ghost danger" id="resetcard">Revenir aux valeurs d’origine</button>' : '') +
     (!base ? '<button class="btn ghost danger" id="deletecard">Supprimer la carte</button>' : '') + '</div>';
@@ -1231,6 +1279,18 @@ $('#panel-cards').addEventListener('click', function (e) {
   if (b.dataset.delabil != null) { S.draft.abil.splice(+b.dataset.delabil, 1); S.draftDirty = true; $('#editor').innerHTML = editorHtml(S.draft); return; }
   if (b.id === 'cancelcard') { S.draft = null; S.draftDirty = false; renderCards(); return; }
   if (b.id === 'savecard') { saveCard(S.draft); return; }
+  if (b.id === 'applynote') {
+    var note = (S.draft.notes || '').trim(); if (!note) { toast('Écris d\u2019abord une note'); return; }
+    var cur = clone(S.draft); saveCard(cur, true);
+    var item = { text: note, at: new Date().toISOString(), status: '', card: cur.id };
+    toast('Claude lit ta note…');
+    var run = function (id) {
+      if (!S.infos.some(function (x) { return x.id === id; })) { item.id = id; S.infos.unshift(item); }
+      interpret(note, cardById(cur.id), id).then(function (r) { toast(r.res.changes.length ? 'Fiche mise à jour par Claude' : (r.prop.question || 'Rien à changer')); S.draft = null; renderCards(); }, function (e) { toast(sampleErr(e)); });
+    };
+    if (DB) DB.collection('infos').add(item).then(function (ref) { run(ref.id); }); else { run('i' + Date.now()); lsSave(); }
+    return;
+  }
   if (b.id === 'resetcard') { var id = S.draft.id; delete S.overrides[id]; S.draft = null; S.draftDirty = false; if (DB) dbDelete('cards/' + id); else lsSave(); SERIES_CACHE.clear(); renderCards(); toast('Valeurs d’origine rétablies'); return; }
   if (b.id === 'deletecard') { var id2 = S.draft.id; delete S.overrides[id2]; S.draft = null; S.cardSel = null; if (DB) dbDelete('cards/' + id2); else lsSave(); renderCards(); toast('Carte supprimée'); return; }
   if (b.id === 'newcard') {
@@ -1240,15 +1300,108 @@ $('#panel-cards').addEventListener('click', function (e) {
     S.overrides[nid] = clone(nc); renderCards(); return;
   }
 });
-function saveCard(c) {
+function saveCard(c, silent) {
   var data = clone(c); delete data._v;
   var at = new Date().toISOString();
   data._v = at;
   S.overrides[c.id] = data; S.draftDirty = false;
   SERIES_CACHE.clear();
-  if (DB) dbWrite('cards/' + c.id, { card: Object.assign({}, data, { _v: undefined }), name: c.name, updatedAt: at }).then(function () { toast('Carte enregistrée'); });
-  else { lsSave(); toast('Carte enregistrée sur cet appareil'); }
-  renderCards(); updateSubline();
+  if (DB) dbWrite('cards/' + c.id, { card: Object.assign({}, data, { _v: undefined }), name: c.name, updatedAt: at }).then(function () { if (!silent) toast('Carte enregistrée'); });
+  else { lsSave(); if (!silent) toast('Carte enregistrée sur cet appareil'); }
+  if (S.tab === 'cards') { S.draft = null; renderCards(); } updateSubline();
+}
+
+/* ================= Claude applique tes infos ================= */
+var SAMPLE = null, SAMPLE_OFF = false;
+if (window.claude && window.claude.use) window.claude.use('sample').then(function (sm) { SAMPLE = sm; if (S.tab === 'rules') renderRules(); if (S.tab === 'cards' && !S.draftDirty) renderCards(); });
+var BUSY = {};
+var norm = function (x) { return String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
+function guessCards(text) {
+  var t = norm(text), out = [];
+  allCards().forEach(function (c) {
+    var words = norm(c.name).split(/[^a-z0-9]+/).filter(function (w) { return w.length >= 4 && ['esprit', 'maitre', 'des', 'les', 'dans'].indexOf(w) < 0; });
+    var full = t.indexOf(norm(c.name)) >= 0;
+    var hit = words.some(function (w) { return new RegExp('(^|[^a-z0-9])' + w + '([^a-z0-9]|$)').test(t); });
+    if (full || hit) out.push(c);
+  });
+  return out.slice(0, 6);
+}
+var CARD_FORMAT = 'Format d’une carte : {id, name, el (F=Feu W=Eau E=Terre N=Nature S=Ombre L=Lumière), hp, res (résistance moyenne 0-1), spam (Spamton/tour), hearts {élément: bonus par tour pour l’équipe}, taunt (part du temps où elle provoque), berserk (0.25 = +25 % équipe), splash (Tox AoE), erosion, graveyard, heal_pct, bomba, instakill_cd, freeze_tox, native_mult, owned, notes, pref (index du talent par défaut), ' +
+  'talents [{name, mods}] où mods peut contenir start{e:n}, hearts{e:n}, hp, res, spam, cavalry, soulvit, splash, crit_self, graveyard, shared_shield, life8, ' +
+  'abil [{n nom, cd recharge, tgt "single"|"aoe"|"none", acc 0-1, cc chance de critique 0-1, cm multiplicateur critique, hits, echo, dmg {e: dégâts}, gen {e: bonus gagné par lancer}, heal {e: soin}, heal_tgt "single"|"all"|"self", inc (+dégâts de base par usage), once_at (usage unique au tour), rnd_dmg, rnd_gen, crit_team, base_team, maxhp_team, cost {e: coût en bonus}, freeze}]}.';
+function buildPrompt(text, focusCard) {
+  var cands = guessCards(text);
+  if (focusCard && !cands.some(function (c) { return c.id === focusCard.id; })) cands.unshift(focusCard);
+  var strip = function (c) { var x = clone(c); delete x._v; return x; };
+  return 'Tu tiens à jour un simulateur du jeu de cartes SPAM (Ticroco). Le joueur vient d’écrire une info. Traduis-la en modifications précises des données du simulateur.\n\n' +
+    'INFO DU JOUEUR : """' + text + '"""\n' + (focusCard ? 'Cette info a été écrite dans la fiche de la carte « ' + focusCard.name + ' ».\n' : '') +
+    '\nRÈGLES (id : question : valeur actuelle) — valeurs possibles true, false, "?" (inconnu), et "partiel" seulement pour freezeFull :\n' +
+    RULES.map(function (r) { return r.id + ' : ' + r.q + ' : ' + JSON.stringify(S.answers[r.id]); }).join('\n') +
+    '\n\nRÉGLAGES NUMÉRIQUES (id : description : valeur) :\n' + NUMS.map(function (n) { return n.id + ' : ' + n.label + ' : ' + S.numbers[n.id]; }).join('\n') +
+    '\n\n' + CARD_FORMAT +
+    '\n\nCARTES PROBABLEMENT CONCERNÉES (JSON complet) :\n' + (cands.length ? cands.map(function (c) { return JSON.stringify(strip(c)); }).join('\n') : '(aucune trouvée par nom)') +
+    '\n\nTOUTES LES CARTES (id : nom) :\n' + allCards().map(function (c) { return c.id + ' : ' + c.name; }).join('\n') +
+    '\n\nRéponds uniquement avec un objet JSON de cette forme :\n{"summary": "une phrase en français qui dit ce que tu changes", "rules": {"id": valeur}, "numbers": {"id": nombre}, "cards": [{"id": "id de la carte", "card": {la carte COMPLÈTE mise à jour}}], "question": "si l’info est ambiguë ou concerne une carte dont tu n’as pas le JSON, la question à poser au joueur ; sinon chaîne vide"}\n' +
+    'N’inclus que ce qui change. N’invente aucune valeur que l’info ne donne pas. Si l’info concerne une carte absente du JSON ci-dessus, ne la modifie pas et pose la question.';
+}
+function applyProposal(prop) {
+  var undo = { answers: {}, numbers: {}, cards: {} }, changes = [];
+  Object.keys(prop.rules || {}).forEach(function (k) {
+    var r = RULES.find(function (x) { return x.id === k; }); if (!r) return;
+    var v = prop.rules[k]; if (!r.opts.some(function (o) { return o[0] === v; })) return;
+    if (S.answers[k] === v) return;
+    undo.answers[k] = S.answers[k]; S.answers[k] = v; S.ruleDates[k] = new Date().toISOString();
+    changes.push('Règle « ' + r.q.replace(/ \?$/, '') + ' » : ' + r.opts.find(function (o) { return o[0] === v; })[1]);
+  });
+  Object.keys(prop.numbers || {}).forEach(function (k) {
+    var n = NUMS.find(function (x) { return x.id === k; }); var v = Number(prop.numbers[k]);
+    if (!n || isNaN(v) || S.numbers[k] === v) return;
+    undo.numbers[k] = S.numbers[k]; S.numbers[k] = v; changes.push(n.label + ' : ' + v);
+  });
+  (prop.cards || []).forEach(function (x) {
+    var cur = x && cardById(x.id); if (!cur || !x.card || typeof x.card !== 'object') return;
+    var nc = Object.assign(clone(cur), x.card, { id: cur.id });
+    if (!Array.isArray(nc.abil) || !Array.isArray(nc.talents) || !(nc.hp > 0)) return;
+    undo.cards[cur.id] = S.overrides[cur.id] ? clone(S.overrides[cur.id]) : null;
+    saveCard(nc, true); changes.push('Carte ' + cur.name + ' mise à jour');
+  });
+  if (Object.keys(undo.answers).length || Object.keys(undo.numbers).length) saveRules();
+  SERIES_CACHE.clear(); updateSubline();
+  return { undo: undo, changes: changes };
+}
+function revertUndo(undo) {
+  Object.keys(undo.answers || {}).forEach(function (k) { S.answers[k] = undo.answers[k]; });
+  Object.keys(undo.numbers || {}).forEach(function (k) { S.numbers[k] = undo.numbers[k]; });
+  saveRules();
+  Object.keys(undo.cards || {}).forEach(function (id) {
+    var prev = undo.cards[id];
+    if (prev) saveCard(prev, true); else { delete S.overrides[id]; if (DB) dbDelete('cards/' + id); else lsSave(); }
+  });
+  SERIES_CACHE.clear(); updateSubline();
+}
+function updateInfo(id, patch) {
+  var it = S.infos.find(function (x) { return x.id === id; }); if (!it) return;
+  Object.assign(it, patch);
+  var body = { text: it.text, at: it.at, status: it.status || '', changes: it.changes || [], question: it.question || '', undo: it.undo || null, card: it.card || '', summary: it.summary || '' };
+  if (DB) dbWrite('infos/' + id, body); else lsSave();
+}
+function interpret(text, focusCard, infoId) {
+  if (!SAMPLE) return Promise.reject({ code: 'unavailable' });
+  if (infoId) { BUSY[infoId] = true; if (S.tab === 'rules') renderRules(); }
+  return SAMPLE.json(buildPrompt(text, focusCard), { cache: false }).then(function (prop) {
+    if (!prop || typeof prop !== 'object') throw { code: 'invalid_json' };
+    var res = applyProposal(prop);
+    var status = res.changes.length ? 'Appliquée' : (prop.question ? 'Question de Claude' : 'Rien à changer');
+    if (infoId) updateInfo(infoId, { status: status, changes: res.changes, question: prop.question || '', undo: res.changes.length ? res.undo : null, summary: prop.summary || '' });
+    return { prop: prop, res: res };
+  }).finally(function () { if (infoId) { delete BUSY[infoId]; if (S.tab === 'rules') renderRules(); } });
+}
+function sampleErr(e) {
+  var c = e && e.code;
+  if (c === 'not_granted' || c === 'sampling_disabled') { SAMPLE_OFF = true; return 'Claude n’a pas l’autorisation sur cette page. Ton info est gardée : je l’appliquerai dans le chat.'; }
+  if (c === 'rate_limited') return 'Trop de demandes pour l’instant. Réessaie dans un moment.';
+  if (c === 'unavailable') return 'Claude n’est disponible que dans la version Claude du labo. Ton info est gardée.';
+  return 'Claude n’a pas réussi à lire ton info. Reformule-la ou réessaie.';
 }
 
 /* ================= Onglet RÈGLES ================= */
@@ -1262,10 +1415,17 @@ function renderRules() {
   }).join('');
   var nums = NUMS.map(function (n) { return '<label class="f"><span>' + esc(n.label) + (n.unit ? ' (' + esc(n.unit) + ')' : '') + '</span><input type="number" step="' + n.step + '" data-num="' + n.id + '" id="num-' + n.id + '" value="' + S.numbers[n.id] + '"></label>'; }).join('');
   var infos = S.infos.length ? S.infos.map(function (x) {
-    return '<div class="row" style="justify-content:space-between;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><div>' + esc(x.text) + '</div><div class="small muted">' + esc((x.at || '').replace('T', ' ').slice(0, 16)) + (x.status ? ' · ' + esc(x.status) : ' · en attente de Claude') + '</div></div><button class="btn ghost danger small" data-delinfo="' + esc(x.id) + '">Supprimer</button></div>';
-  }).join('') : '<p class="muted small">Rien pour l’instant.</p>';
+    var busy = BUSY[x.id];
+    var st = busy ? '<span class="warn">Claude lit ton info…</span>' : (x.status === 'Appliquée' ? '<span class="good">Appliquée</span>' : (x.status ? esc(x.status) : 'En attente'));
+    var ch = (x.changes && x.changes.length) ? '<ul class="small" style="margin:4px 0 0;padding-left:18px">' + x.changes.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul>' : '';
+    var qn = x.question ? '<div class="small warn" style="margin-top:4px">' + esc(x.question) + '</div>' : '';
+    var btns = (SAMPLE && !SAMPLE_OFF && !busy ? '<button class="btn small" data-applyinfo="' + esc(x.id) + '">' + (x.status ? 'Relancer Claude' : 'Appliquer avec Claude') + '</button>' : '') +
+      (x.undo && !busy ? '<button class="btn ghost small" data-undoinfo="' + esc(x.id) + '">Annuler</button>' : '') +
+      '<button class="btn ghost danger small" data-delinfo="' + esc(x.id) + '">Supprimer</button>';
+    return '<div class="stack" style="gap:6px;padding:10px 0;border-bottom:1px solid var(--line)"><div>' + esc(x.text) + '</div><div class="small muted">' + esc((x.at || '').replace('T', ' ').slice(0, 16)) + ' · ' + st + '</div>' + ch + qn + '<div class="row">' + btns + '</div></div>';
+  }).join('') : '<p class="muted small">Rien pour l\u2019instant.</p>';
   $('#panel-rules').innerHTML = '<div class="grid2"><div class="stack">' +
-    '<div class="box stack"><h2>Ajouter une info</h2><p class="small muted" style="margin:0">Une valeur vue en jeu, un effet mal compris, un patch… Claude lit cette liste à ta prochaine demande et met à jour les cartes ou le simulateur.</p>' +
+    '<div class="box stack"><h2>Ajouter une info</h2><p class="small muted" style="margin:0">' + (SAMPLE && !SAMPLE_OFF ? 'Une valeur vue en jeu, une règle, un patch… Claude la lit tout de suite et modifie les cartes ou les règles du simulateur. Tu peux annuler chaque changement.' : 'Une valeur vue en jeu, une règle, un patch… Sur cette version, Claude ne peut pas l\u2019appliquer lui-même : ouvre le labo depuis Claude pour que tes infos soient appliquées automatiquement.') + '</p>' +
     '<textarea id="newinfo" placeholder="Ex. : Feau de Scorch inflige aussi 10 dégâts Eau"></textarea><button class="btn primary" id="addinfo">Ajouter</button></div>' +
     '<div class="box"><h3>Infos ajoutées</h3>' + infos + '</div>' +
     '<div class="box stack"><h3>Réglages du simulateur</h3><div class="fields" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">' + nums + '</div><div><button class="btn ghost" id="resetnums">Valeurs par défaut</button></div></div>' +
@@ -1281,9 +1441,25 @@ $('#panel-rules').addEventListener('click', function (e) {
   if (b.id === 'addinfo') {
     var txt = ($('#newinfo').value || '').trim(); if (!txt) return;
     var item = { text: txt, at: new Date().toISOString(), status: '' };
-    if (DB) DB.collection('infos').add(item).then(function () { toast('Info ajoutée'); }).catch(function (er) { toast('Enregistrement impossible : ' + (er && er.message || er)); });
-    else { item.id = 'i' + Date.now(); S.infos.unshift(item); lsSave(); renderRules(); toast('Info ajoutée sur cet appareil'); }
+    var go = function (id) {
+      if (!S.infos.some(function (x) { return x.id === id; })) { item.id = id; S.infos.unshift(item); }
+      renderRules();
+      if (SAMPLE && !SAMPLE_OFF) interpret(txt, null, id).then(function (r) { toast(r.res.changes.length ? 'Claude a appliqué ton info' : (r.prop.question ? 'Claude a une question sur ton info' : 'Rien à changer')); }, function (e) { toast(sampleErr(e)); });
+      else toast('Info ajoutée');
+    };
+    if (DB) DB.collection('infos').add(item).then(function (ref) { go(ref.id); }).catch(function (er) { toast('Enregistrement impossible : ' + (er && er.message || er)); });
+    else { go('i' + Date.now()); lsSave(); }
     $('#newinfo').value = ''; return;
+  }
+  if (b.dataset.applyinfo) {
+    var it = S.infos.find(function (x) { return x.id === b.dataset.applyinfo; }); if (!it) return;
+    if (it.undo) revertUndo(it.undo);
+    interpret(it.text, it.card ? cardById(it.card) : null, it.id).then(function (r) { toast(r.res.changes.length ? 'Claude a appliqué ton info' : 'Rien à changer'); }, function (e) { toast(sampleErr(e)); });
+    return;
+  }
+  if (b.dataset.undoinfo) {
+    var it2 = S.infos.find(function (x) { return x.id === b.dataset.undoinfo; }); if (!it2 || !it2.undo) return;
+    revertUndo(it2.undo); updateInfo(it2.id, { status: 'Annulée', undo: null }); renderRules(); toast('Changements annulés'); return;
   }
   if (b.dataset.delinfo) { var id = b.dataset.delinfo; if (DB) dbDelete('infos/' + id); else { S.infos = S.infos.filter(function (x) { return x.id !== id; }); lsSave(); renderRules(); } return; }
   if (b.id === 'resetnums') { NUMS.forEach(function (n) { S.numbers[n.id] = n.d; }); saveRules(); renderRules(); toast('Réglages remis par défaut'); }
